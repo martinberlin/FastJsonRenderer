@@ -1,0 +1,14 @@
+name: fastjsonrenderer
+type: symfony
+php_version: "8.3"
+webserver_type: nginx-fpm
+docroot: public
+database:
+  type: mariadb
+  version: "10.11"
+nodejs_version: "20"
+hooks:
+  post-start:
+    - exec: "composer install --no-interaction"
+    - exec: "php bin/console doctrine:migrations:migrate --no-interaction || true"
+    - exec: "npm install && npm run build"
