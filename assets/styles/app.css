@@ -165,7 +165,8 @@ body {
 .scale-label select { padding: 3px 6px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; }
 .editor-error { background: #fee2e2; color: var(--danger); padding: 8px 16px; font-size: 13px; border-bottom: 1px solid #fca5a5; flex-shrink: 0; }
 
-.editor-body { display: flex; flex: 1; overflow: hidden; }
+/* ── Editor body: must have min-height:0 so flex children can shrink ── */
+.editor-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
 /* ── Left toolbar ────────────────────────────────────────── */
 .toolbar {
@@ -300,7 +301,10 @@ body {
     margin-left: 4px;
 }
 
-/* ── JSON preview ────────────────────────────────────────── */
+/* ── Active button (JSON footer toggle) ──────────────────── */
+.btn-active { background: #dbeafe !important; color: var(--primary) !important; border-color: #bfdbfe !important; }
+
+/* ── JSON preview (right-panel variant – kept for reference) ── */
 .json-preview {
     border-top: 1px solid var(--border);
     display: flex;
@@ -332,4 +336,102 @@ body {
     background: #1e293b;
     color: #e2e8f0;
     line-height: 1.6;
+}
+
+/* =========================================================
+   JSON Footer Bar
+   ========================================================= */
+
+.json-footer {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background: #1e293b;         /* dark code background */
+    border-top: 2px solid #334155;
+    overflow: hidden;
+    /* height is set inline from React state */
+}
+
+/* Drag handle – a thin grippy strip at the very top */
+.json-footer-handle {
+    height: 5px;
+    flex-shrink: 0;
+    background: #334155;
+    cursor: ns-resize;
+    transition: background .15s;
+}
+.json-footer-handle:hover,
+.json-footer-handle:active {
+    background: var(--primary);
+}
+
+/* Top bar inside the footer */
+.json-footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 14px;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.json-footer-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: .03em;
+    user-select: none;
+}
+.json-footer-brace {
+    color: #60a5fa;          /* blue accent matching primary */
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+}
+.json-footer-count {
+    background: #1e3a5f;
+    color: #93c5fd;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    letter-spacing: .02em;
+}
+
+.json-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.json-footer-close {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background .15s, color .15s;
+}
+.json-footer-close:hover { background: #334155; color: #e2e8f0; }
+
+/* Scrollable JSON code area */
+.json-footer-code {
+    margin: 0;
+    padding: 12px 16px;
+    font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    overflow: auto;
+    flex: 1;
+    /* Subtle syntax-hint colouring via CSS only (no syntax highlighter dep) */
+    white-space: pre;
+    tab-size: 2;
 }

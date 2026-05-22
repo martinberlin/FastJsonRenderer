@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
-import JsonPreview from './JsonPreview';
+import JsonFooter from './JsonFooter';
 
 const SCALE_OPTIONS = [0.25, 0.33, 0.5, 0.67, 0.75, 1.0];
+const JSON_FOOTER_DEFAULT_H = 220;
+const JSON_FOOTER_MIN_H = 80;
+const JSON_FOOTER_MAX_H = 600;
 
 /**
  * Editor – the full canvas-based screen design interface.
@@ -21,13 +24,38 @@ export default function Editor({ screenId, onBack }) {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const [scale, setScale] = useState(0.5);
     const [showJson, setShowJson] = useState(false);
+    const [jsonFooterHeight, setJsonFooterHeight] = useState(JSON_FOOTER_DEFAULT_H);
     const [title, setTitle] = useState('');
 
     // Unsaved items buffer (working copy of screen.items during editing)
     const [items, setItems] = useState([]);
 
-    // Snapshot of items before a drag starts – used to compute position from delta
+    // Ref used during footer drag-to-resize
+    const footerDragRef = useRef(null);
+
+    // Snapshot of items before a canvas drag starts – used to compute position from delta
     const snapRef = useRef([]);
+
+    // ------------ footer resize drag ------------------------------------
+    const handleFooterDragStart = useCallback((e) => {
+        e.preventDefault();
+        footerDragRef.current = { startY: e.clientY, startH: jsonFooterHeight };
+
+        const onMove = (me) => {
+            if (!footerDragRef.current) return;
+            const dy = footerDragRef.current.startY - me.clientY;
+            setJsonFooterHeight(
+                Math.max(JSON_FOOTER_MIN_H, Math.min(JSON_FOOTER_MAX_H, footerDragRef.current.startH + dy)),
+            );
+        };
+        const onUp = () => {
+            footerDragRef.current = null;
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    }, [jsonFooterHeight]);
 
     // ------------ load existing screen -----------------------------------
     useEffect(() => {
@@ -210,8 +238,8 @@ export default function Editor({ screenId, onBack }) {
                             ))}
                         </select>
                     </label>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setShowJson((v) => !v)}>
-                        {showJson ? 'Hide JSON' : 'Show JSON'}
+                    <button className={`btn btn-secondary btn-sm${showJson ? ' btn-active' : ''}`} onClick={() => setShowJson((v) => !v)}>
+                        {'{ }'} JSON
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={handleExport}>
                         Export
@@ -252,7 +280,7 @@ export default function Editor({ screenId, onBack }) {
                     </div>
                 </div>
 
-                {/* Right: properties + optional JSON */}
+                {/* Right: properties panel */}
                 <div className="right-panel">
                     <PropertiesPanel
                         item={selectedIndex !== null ? items[selectedIndex] : null}
@@ -262,11 +290,18 @@ export default function Editor({ screenId, onBack }) {
                         onMoveUp={handleMoveUp}
                         onMoveDown={handleMoveDown}
                     />
-                    {showJson && (
-                        <JsonPreview screen={{ ...screen, items }} />
-                    )}
                 </div>
             </div>
+
+            {/* ── JSON footer bar ──────────────────────────────────── */}
+            {showJson && (
+                <JsonFooter
+                    screen={{ ...screen, items }}
+                    height={jsonFooterHeight}
+                    onDragHandleMouseDown={handleFooterDragStart}
+                    onClose={() => setShowJson(false)}
+                />
+            )}
         </div>
     );
 }
