@@ -15,7 +15,6 @@ Encore
     .enableSourceMaps(!Encore.isProduction())
     .enableVersioning(Encore.isProduction())
     .enableReactPreset()
-    .enableCssLoader()
 ;
 
 module.exports = Encore.getWebpackConfig();
