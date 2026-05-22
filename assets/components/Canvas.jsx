@@ -10,6 +10,32 @@ const toGrayColor = (c = 0, bpp = 4) => {
 /** Approximate font height (px) used when rendering text items. */
 const FONT_SIZE = { Ubuntu40: 40, Ubuntu30: 30, Ubuntu20: 20 };
 
+const getItemBounds = (item) => {
+    switch (item.type) {
+        case 'drawString': {
+            const fontSize = FONT_SIZE[item.font] ?? 30;
+            const text = item.string ?? 'Text';
+            const textWidth = Math.max(fontSize * 0.6, text.length * fontSize * 0.6);
+            return { x: item.x, y: item.y - fontSize, w: textWidth, h: fontSize };
+        }
+        case 'fillRect':
+        case 'drawRect':
+            return { x: item.x, y: item.y, w: item.w, h: item.h };
+        case 'drawLine': {
+            const x = Math.min(item.x1, item.x2);
+            const y = Math.min(item.y1, item.y2);
+            const w = Math.max(2, Math.abs(item.x2 - item.x1));
+            const h = Math.max(2, Math.abs(item.y2 - item.y1));
+            return { x, y, w, h };
+        }
+        case 'fillCircle':
+        case 'drawCircle':
+            return { x: item.x - item.r, y: item.y - item.r, w: item.r * 2, h: item.r * 2 };
+        default:
+            return null;
+    }
+};
+
 /**
  * Canvas component – renders a FastJsonDL screen as an SVG, scaled to fit.
  *
@@ -68,6 +94,12 @@ export default function Canvas({
             drag.current = null;
         }
     }, [onCommitMove]);
+
+    const handleBackgroundMouseDown = useCallback((e) => {
+        if (e.target === e.currentTarget) {
+            onSelect(null);
+        }
+    }, [onSelect]);
 
     const renderItem = (item, index) => {
         const color = toGrayColor(item.c, displayBpp);
@@ -176,6 +208,12 @@ export default function Canvas({
         }
     };
 
+    const selectedItem = selectedIndex !== null ? items[selectedIndex] : null;
+    const selectedBounds = selectedItem ? getItemBounds(selectedItem) : null;
+    const selectionPadding = Math.max(4 / scale, 2);
+    const selectionStrokeWidth = Math.max(1.5 / scale, 1);
+    const selectionDash = `${Math.max(5 / scale, 2)} ${Math.max(3 / scale, 2)}`;
+
     return (
         <div
             className="canvas-wrapper"
@@ -190,13 +228,28 @@ export default function Canvas({
                 height={displayHeight * scale}
                 viewBox={`0 0 ${displayWidth} ${displayHeight}`}
                 className="canvas-svg"
-                onClick={() => onSelect(null)}
+                onMouseDown={handleBackgroundMouseDown}
             >
                 {/* White display background */}
                 <rect x={0} y={0} width={displayWidth} height={displayHeight} fill="white" />
 
                 {/* Render items */}
                 {items.map((item, index) => renderItem(item, index))}
+
+                {/* Persistent selection box */}
+                {selectedBounds && (
+                    <rect
+                        x={selectedBounds.x - selectionPadding}
+                        y={selectedBounds.y - selectionPadding}
+                        width={selectedBounds.w + selectionPadding * 2}
+                        height={selectedBounds.h + selectionPadding * 2}
+                        fill="none"
+                        stroke="#2563eb"
+                        strokeWidth={selectionStrokeWidth}
+                        strokeDasharray={selectionDash}
+                        pointerEvents="none"
+                    />
+                )}
             </svg>
         </div>
     );
