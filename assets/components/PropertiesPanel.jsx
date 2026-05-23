@@ -118,38 +118,38 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                     <NumField label="Width" value={item.w} onChange={(v) => onChange({ w: Math.max(1, v) })} min={1} />
                     <NumField label="Height" value={item.h} onChange={(v) => onChange({ h: Math.max(1, v) })} min={1} />
                     <div className="prop-row">
-                        <label>FG Color <span className="hint">foreground (1-bits)</span></label>
+                        <label>FG Color <span className="hint">white/background pixels (1-bits)</span></label>
                         <input
                             type="range"
                             min={0}
                             max={maxColor}
-                            value={item.fg ?? 0}
+                            value={item.fg ?? maxColor}
                             onChange={(e) => onChange({ fg: parseInt(e.target.value, 10) })}
                         />
                         {(() => {
-                            const fgV = Math.round(((item.fg ?? 0) / maxColor) * 255);
+                            const fgV = Math.round(((item.fg ?? maxColor) / maxColor) * 255);
                             return (
                                 <span className="color-preview" style={{
                                     background: `rgb(${fgV},${fgV},${fgV})`,
-                                }}>{item.fg ?? 0}</span>
+                                }}>{item.fg ?? maxColor}</span>
                             );
                         })()}
                     </div>
                     <div className="prop-row">
-                        <label>BG Color <span className="hint">background (0-bits)</span></label>
+                        <label>BG Color <span className="hint">black/content pixels (0-bits)</span></label>
                         <input
                             type="range"
                             min={0}
                             max={maxColor}
-                            value={item.bg ?? maxColor}
+                            value={item.bg ?? 0}
                             onChange={(e) => onChange({ bg: parseInt(e.target.value, 10) })}
                         />
                         {(() => {
-                            const bgV = Math.round(((item.bg ?? maxColor) / maxColor) * 255);
+                            const bgV = Math.round(((item.bg ?? 0) / maxColor) * 255);
                             return (
                                 <span className="color-preview" style={{
                                     background: `rgb(${bgV},${bgV},${bgV})`,
-                                }}>{item.bg ?? maxColor}</span>
+                                }}>{item.bg ?? 0}</span>
                             );
                         })()}
                     </div>

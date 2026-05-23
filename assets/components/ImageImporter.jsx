@@ -76,8 +76,8 @@ export default function ImageImporter({ onAdd, onClose }) {
                 h:       targetH,
                 data:    g5ToHexArray(g5),
                 preview: previewDataUrl, // editor-only; stripped on firmware export
-                fg:      0,
-                bg:      15,
+                fg:      15,
+                bg:      0,
             });
             onClose();
         };
