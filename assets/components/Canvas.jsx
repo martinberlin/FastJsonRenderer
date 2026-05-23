@@ -317,22 +317,42 @@ export default function Canvas({
                         strokeDasharray={isSelected ? `${6 / scale}` : undefined}
                         {...baseProps} />
                 );
-            case 'loadG5Image':
+            case 'loadG5Image': {
+                const maxC = (1 << Math.max(1, displayBpp)) - 1;
+                const fgNorm = (item.fg ?? maxC) / maxC;
+                const bgNorm = (item.bg ?? 0) / maxC;
+                // feComponentTransfer linear: output = slope*input + intercept
+                // white pixel (1) → fgNorm, black pixel (0) → bgNorm
+                const slope = fgNorm - bgNorm;
+                const intercept = bgNorm;
+                const filterId = `g5f-${index}`;
                 return (
-                    <image
-                        key={index}
-                        href={item.preview ?? ''}
-                        x={item.x}
-                        y={item.y}
-                        width={item.w}
-                        height={item.h}
-                        imageRendering="pixelated"
-                        stroke={isSelected ? '#2563eb' : 'none'}
-                        strokeWidth={isSelected ? 2 / scale : 0}
-                        strokeDasharray={isSelected ? `${6 / scale}` : undefined}
-                        {...baseProps}
-                    />
+                    <g key={index}>
+                        <defs>
+                            <filter id={filterId} colorInterpolationFilters="sRGB">
+                                <feComponentTransfer>
+                                    <feFuncR type="linear" slope={slope} intercept={intercept} />
+                                    <feFuncG type="linear" slope={slope} intercept={intercept} />
+                                    <feFuncB type="linear" slope={slope} intercept={intercept} />
+                                </feComponentTransfer>
+                            </filter>
+                        </defs>
+                        <image
+                            href={item.preview ?? ''}
+                            x={item.x}
+                            y={item.y}
+                            width={item.w}
+                            height={item.h}
+                            imageRendering="pixelated"
+                            filter={`url(#${filterId})`}
+                            stroke={isSelected ? '#2563eb' : 'none'}
+                            strokeWidth={isSelected ? 2 / scale : 0}
+                            strokeDasharray={isSelected ? `${6 / scale}` : undefined}
+                            {...baseProps}
+                        />
+                    </g>
                 );
+            }
             default:
                 return null;
         }
