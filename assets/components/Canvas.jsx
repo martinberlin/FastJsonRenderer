@@ -9,18 +9,16 @@ const toGrayColor = (c = 0, bpp = 4) => {
 
 const FONT_META = {
     Ubuntu40: { size: 40, family: 'Ubuntu, sans-serif', weight: 400 },
+    Ubuntu40b: { size: 40, family: 'Ubuntu, sans-serif', weight: 700 },
     Ubuntu30: { size: 30, family: 'Ubuntu, sans-serif', weight: 400 },
     Ubuntu20: { size: 20, family: 'Ubuntu, sans-serif', weight: 400 },
-    'Ubuntu-Regular': { size: 30, family: 'Ubuntu, sans-serif', weight: 400 },
-    'Ubuntu-Medium': { size: 30, family: 'Ubuntu, sans-serif', weight: 500 },
-    Monospace: { size: 30, family: '\'Ubuntu Mono\', \'Courier New\', monospace', weight: 400 },
+    Monospace12: { size: 12, family: '"Ubuntu Mono", "Courier New", monospace', weight: 400 },
 };
+const DEFAULT_FONT_META = FONT_META.Ubuntu30;
 
 const getFontMeta = (font) => {
     if (font && FONT_META[font]) return FONT_META[font];
-    const sizeMatch = typeof font === 'string' ? font.match(/(\d+)/) : null;
-    if (sizeMatch) return { ...FONT_META.Ubuntu30, size: parseInt(sizeMatch[1], 10) };
-    return FONT_META.Ubuntu30;
+    return DEFAULT_FONT_META;
 };
 
 const getItemBounds = (item) => {
