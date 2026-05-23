@@ -68,7 +68,7 @@ ddev npm run watch
 - **Visual canvas** – 1:1 scale representation of the target display (default: ED052TC4 1280×780)
 - **Drag-and-drop** – click an element on the canvas and drag it to reposition
 - **Element types** – text (`drawString`), filled/outline rectangles, lines, filled/outline circles
-- **Fonts** – Ubuntu40, Ubuntu30, Ubuntu20 (matching FastJsonDL font registry)
+- **Fonts** – Ubuntu40, Ubuntu40b, Ubuntu30, Ubuntu20 and Monospace12
 - **Grayscale colour picker** – 0 (black) → 15 (white) for 4BPP displays
 - **Layer ordering** – move elements up/down in rendering order
 - **Live JSON footer** – click `{ } JSON` in the header to open a dark-themed footer panel spanning the full editor width; see the exact FastJsonDL payload update live as you design; drag the top edge to resize it; copy to clipboard in one click
@@ -155,7 +155,7 @@ The `/api/screens/{id}/export` endpoint returns a payload ready to be sent direc
 
 | Type | Required properties |
 |------|-----------|
-| `drawString` | `x`, `y` (baseline), `string`, `font` (Ubuntu40 / Ubuntu30 / Ubuntu20), `c` |
+| `drawString` | `x`, `y` (baseline), `string`, `font` (Ubuntu40 / Ubuntu40b / Ubuntu30 / Ubuntu20 / Monospace12), `c` |
 | `fillRect` | `x`, `y`, `w`, `h`, `c` |
 | `drawRect` | `x`, `y`, `w`, `h`, `c` |
 | `drawLine` | `x1`, `y1`, `x2`, `y2`, `c` |

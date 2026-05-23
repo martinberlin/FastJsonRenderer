@@ -7,13 +7,27 @@ const toGrayColor = (c = 0, bpp = 4) => {
     return `rgb(${v},${v},${v})`;
 };
 
-/** Approximate font height (px) used when rendering text items. */
-const FONT_SIZE = { Ubuntu40: 40, Ubuntu30: 30, Ubuntu20: 20 };
+// Font sizes are in display pixels matching the firmware's fontconvert tool output.
+// fontconvert renders TTF fonts at <pt size> points @ 141 DPI, so the actual
+// pixel height = Math.round(pt * 141 / 72). E.g. Ubuntu40 = round(40*141/72) = 78 px.
+const FONT_META = {
+    Ubuntu40:    { size: 78, family: 'Ubuntu, sans-serif', weight: 400 },  // round(40*141/72)
+    Ubuntu40b:   { size: 78, family: 'Ubuntu, sans-serif', weight: 700 },  // round(40*141/72)
+    Ubuntu30:    { size: 59, family: 'Ubuntu, sans-serif', weight: 400 },  // round(30*141/72)
+    Ubuntu20:    { size: 39, family: 'Ubuntu, sans-serif', weight: 400 },  // round(20*141/72)
+    Monospace12: { size: 24, family: '"Roboto Mono", "Courier New", monospace', weight: 400 }, // round(12*141/72)
+};
+const DEFAULT_FONT_META = FONT_META.Ubuntu30;
+
+const getFontMeta = (font) => {
+    if (font && FONT_META[font]) return FONT_META[font];
+    return DEFAULT_FONT_META;
+};
 
 const getItemBounds = (item) => {
     switch (item.type) {
         case 'drawString': {
-            const fontSize = FONT_SIZE[item.font] ?? 30;
+            const { size: fontSize } = getFontMeta(item.font);
             const text = item.string ?? 'Text';
             const textWidth = Math.max(fontSize * 0.6, text.length * fontSize * 0.6);
             return { x: item.x, y: item.y - fontSize, w: textWidth, h: fontSize };
@@ -114,15 +128,16 @@ export default function Canvas({
 
         switch (item.type) {
             case 'drawString': {
-                const fontSize = FONT_SIZE[item.font] ?? 30;
+                const fontMeta = getFontMeta(item.font);
                 return (
                     <text
                         key={index}
                         x={item.x}
                         y={item.y}
-                        fontSize={fontSize}
+                        fontSize={fontMeta.size}
                         fill={color}
-                        fontFamily={`${item.font?.replace(/\d+$/, '') ?? 'Ubuntu'}, Ubuntu, sans-serif`}
+                        fontFamily={fontMeta.family}
+                        fontWeight={fontMeta.weight}
                         onMouseDown={(e) => handleItemMouseDown(e, index)}
                         style={{ cursor: 'move', userSelect: 'none' }}
                         stroke={isSelected ? '#2563eb' : 'none'}

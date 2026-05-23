@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FONTS = ['Ubuntu40', 'Ubuntu30', 'Ubuntu20'];
+const FONTS = ['Ubuntu40', 'Ubuntu40b', 'Ubuntu30', 'Ubuntu20', 'Monospace12'];
 
 /**
  * Numeric field helper – shows an input[number] and keeps the value as integer.

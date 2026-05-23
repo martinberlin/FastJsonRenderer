@@ -1,3 +1,6 @@
+.DS_Store
+.editorconfig
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
