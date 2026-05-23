@@ -9,8 +9,11 @@
 /public/bundles/
 /var/
 /vendor/
+symfony.lock
 ###< symfony/framework-bundle ###
-
+# ENVs out
+.env
+.env.dev
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
 /public/build/
@@ -26,7 +29,8 @@ yarn-error.log
 /.ddev/homeadditions
 /.ddev/.gitignore
 /.ddev/docker-compose.*
-
+# ASSETs
+assets/app.js
 # IDE
 .idea/
 .vscode/

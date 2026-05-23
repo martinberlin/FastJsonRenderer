@@ -51,28 +51,30 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                 </div>
             </div>
 
-            {/* Colour */}
-            <div className="prop-row">
-                <label>
-                    Color (c) <span className="hint">0=black · {maxColor}=white</span>
-                </label>
-                <input
-                    type="range"
-                    min={0}
-                    max={maxColor}
-                    value={item.c ?? 0}
-                    onChange={(e) => onChange({ c: parseInt(e.target.value, 10) })}
-                />
-                <span className="color-preview" style={{
-                    background: `rgb(${Math.round(((item.c ?? 0) / maxColor) * 255)},${Math.round(((item.c ?? 0) / maxColor) * 255)},${Math.round(((item.c ?? 0) / maxColor) * 255)})`,
-                }}>{item.c ?? 0}</span>
-            </div>
+            {/* Colour – not applicable for G5 images (they use fg/bg instead) */}
+            {item.type !== 'loadG5Image' && (
+                <div className="prop-row">
+                    <label>
+                        Color (c) <span className="hint">0=black · {maxColor}=white</span>
+                    </label>
+                    <input
+                        type="range"
+                        min={0}
+                        max={maxColor}
+                        value={item.c ?? 0}
+                        onChange={(e) => onChange({ c: parseInt(e.target.value, 10) })}
+                    />
+                    <span className="color-preview" style={{
+                        background: `rgb(${Math.round(((item.c ?? 0) / maxColor) * 255)},${Math.round(((item.c ?? 0) / maxColor) * 255)},${Math.round(((item.c ?? 0) / maxColor) * 255)})`,
+                    }}>{item.c ?? 0}</span>
+                </div>
+            )}
 
             {/* Text-specific */}
             {item.type === 'drawString' && (
                 <>
                     <div className="prop-row">
-                        <label>Text</label>
+                        <label>Text <span className="hint">double-click on canvas to edit</span></label>
                         <input
                             type="text"
                             value={item.string ?? ''}
@@ -110,12 +112,55 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                 </>
             )}
 
-            {/* Circle */}
-            {(item.type === 'fillCircle' || item.type === 'drawCircle') && (
+            {/* G5 image */}
+            {item.type === 'loadG5Image' && (
                 <>
-                    <NumField label="Center X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
-                    <NumField label="Center Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
-                    <NumField label="Radius" value={item.r} onChange={(v) => onChange({ r: Math.max(1, v) })} min={1} />
+                    <NumField label="X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
+                    <NumField label="Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
+                    <NumField label="Width" value={item.w} onChange={(v) => onChange({ w: Math.max(1, v) })} min={1} />
+                    <NumField label="Height" value={item.h} onChange={(v) => onChange({ h: Math.max(1, v) })} min={1} />
+                    <div className="prop-row">
+                        <label>FG Color <span className="hint">white/background pixels (1-bits)</span></label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxColor}
+                            value={item.fg ?? maxColor}
+                            onChange={(e) => onChange({ fg: parseInt(e.target.value, 10) })}
+                        />
+                        {(() => {
+                            const fgV = Math.round(((item.fg ?? maxColor) / maxColor) * 255);
+                            return (
+                                <span className="color-preview" style={{
+                                    background: `rgb(${fgV},${fgV},${fgV})`,
+                                }}>{item.fg ?? maxColor}</span>
+                            );
+                        })()}
+                    </div>
+                    <div className="prop-row">
+                        <label>BG Color <span className="hint">black/content pixels (0-bits)</span></label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxColor}
+                            value={item.bg ?? 0}
+                            onChange={(e) => onChange({ bg: parseInt(e.target.value, 10) })}
+                        />
+                        {(() => {
+                            const bgV = Math.round(((item.bg ?? 0) / maxColor) * 255);
+                            return (
+                                <span className="color-preview" style={{
+                                    background: `rgb(${bgV},${bgV},${bgV})`,
+                                }}>{item.bg ?? 0}</span>
+                            );
+                        })()}
+                    </div>
+                    <div className="prop-row">
+                        <label>G5 data</label>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {item.data ? `${Array.isArray(item.data) ? item.data.length : '?'} bytes` : '—'}
+                        </span>
+                    </div>
                 </>
             )}
         </div>
