@@ -12,7 +12,7 @@ const FONT_META = {
     Ubuntu40b: { size: 40, family: 'Ubuntu, sans-serif', weight: 700 },
     Ubuntu30: { size: 30, family: 'Ubuntu, sans-serif', weight: 400 },
     Ubuntu20: { size: 20, family: 'Ubuntu, sans-serif', weight: 400 },
-    Monospace12: { size: 12, family: '"Ubuntu Mono", "Courier New", monospace', weight: 400 },
+    Monospace12: { size: 12, family: '"Roboto Mono", "Courier New", monospace', weight: 400 },
 };
 const DEFAULT_FONT_META = FONT_META.Ubuntu30;
 
