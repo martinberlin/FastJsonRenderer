@@ -198,15 +198,18 @@ function luminance(rgba, off) {
  * @param {number}            height
  * @param {number}            threshold Luminance threshold (0-255); pixels
  *                                      below → black (0), at/above → white (1).
+ * @param {boolean}           invert    When true, swap black and white pixels.
  * @returns {Uint8Array}
  */
-export function rgbaToG5(rgba, width, height, threshold = 128) {
+export function rgbaToG5(rgba, width, height, threshold = 128, invert = false) {
     // Build 2-D pixel array (0=black, 1=white) for the encoder
     const pixels2d = [];
     for (let y = 0; y < height; y++) {
         const row = new Uint8Array(width);
         for (let x = 0; x < width; x++) {
-            row[x] = luminance(rgba, (y * width + x) * 4) >= threshold ? 1 : 0;
+            let white = luminance(rgba, (y * width + x) * 4) >= threshold;
+            if (invert) white = !white;
+            row[x] = white ? 1 : 0;
         }
         pixels2d.push(row);
     }
@@ -234,9 +237,10 @@ export function rgbaToG5(rgba, width, height, threshold = 128) {
  * @param {number}           targetWidth
  * @param {number}           targetHeight
  * @param {number}           threshold   0-255
+ * @param {boolean}          invert      When true, swap black and white pixels
  * @returns {{ g5: Uint8Array, previewDataUrl: string }}
  */
-export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
+export function imageToG5(img, targetWidth, targetHeight, threshold = 128, invert = false) {
     // ── source canvas: greyscale render ──────────────────────────────────
     const src = document.createElement('canvas');
     src.width = targetWidth;
@@ -250,7 +254,7 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
     const imageData = sctx.getImageData(0, 0, targetWidth, targetHeight);
 
     // ── G5 encode ─────────────────────────────────────────────────────────
-    const g5 = rgbaToG5(imageData.data, targetWidth, targetHeight, threshold);
+    const g5 = rgbaToG5(imageData.data, targetWidth, targetHeight, threshold, invert);
 
     // ── 1-bit preview PNG ─────────────────────────────────────────────────
     const prev = document.createElement('canvas');
@@ -259,7 +263,9 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
     const pctx = prev.getContext('2d');
     const pd = pctx.createImageData(targetWidth, targetHeight);
     for (let i = 0; i < targetWidth * targetHeight; i++) {
-        const v = luminance(imageData.data, i * 4) >= threshold ? 255 : 0;
+        let white = luminance(imageData.data, i * 4) >= threshold;
+        if (invert) white = !white;
+        const v = white ? 255 : 0;
         pd.data[i * 4]     = v;
         pd.data[i * 4 + 1] = v;
         pd.data[i * 4 + 2] = v;
@@ -272,8 +278,8 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
 
 /**
  * Convert a Uint8Array of G5 bytes to the firmware-compatible hex-string array.
- * Each byte becomes a 2-char lowercase hex string (no "0x" prefix).
- * Example: [0xbf, 0x00] → ["bf","00"]
+ * Each byte becomes a "0x"-prefixed 2-char lowercase hex string.
+ * Example: [0xbf, 0x00] → ["0xbf","0x00"]
  *
  * @param {Uint8Array} data
  * @returns {string[]}
@@ -281,7 +287,8 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
 export function g5ToHexArray(data) {
     const out = new Array(data.length);
     for (let i = 0; i < data.length; i++) {
-        out[i] = data[i].toString(16).padStart(2, '0');
+        // "0x" prefix is required for FastJsonDL firmware to parse hex byte values correctly
+        out[i] = '0x' + data[i].toString(16).padStart(2, '0');
     }
     return out;
 }

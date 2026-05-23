@@ -15,6 +15,7 @@ export default function ImageImporter({ onAdd, onClose }) {
     const [targetH, setTargetH]         = useState(64);
     const [threshold, setThreshold]     = useState(128);
     const [keepAspect, setKeepAspect]   = useState(true);
+    const [invert, setInvert]           = useState(false);
     const [preview, setPreview]         = useState(null);
     const [originalAspect, setOrigAspect] = useState(1);
     const fileRef = useRef(null);
@@ -57,7 +58,7 @@ export default function ImageImporter({ onAdd, onClose }) {
         if (!imgSrc) return;
         const img = new Image();
         img.onload = () => {
-            const { previewDataUrl } = imageToG5(img, targetW, targetH, threshold);
+            const { previewDataUrl } = imageToG5(img, targetW, targetH, threshold, invert);
             setPreview(previewDataUrl);
         };
         img.src = imgSrc;
@@ -67,7 +68,7 @@ export default function ImageImporter({ onAdd, onClose }) {
         if (!imgSrc) return;
         const img = new Image();
         img.onload = () => {
-            const { g5, previewDataUrl } = imageToG5(img, targetW, targetH, threshold);
+            const { g5, previewDataUrl } = imageToG5(img, targetW, targetH, threshold, invert);
             onAdd({
                 type:    'loadG5Image',
                 x:       50,
@@ -124,6 +125,13 @@ export default function ImageImporter({ onAdd, onClose }) {
                             <input type="range" min={0} max={255} value={threshold}
                                 onChange={(e) => { setThreshold(parseInt(e.target.value, 10)); setPreview(null); }} />
                         </div>
+
+                        <label className="importer-aspect" style={{ marginBottom: 12 }}>
+                            <input type="checkbox" checked={invert}
+                                onChange={(e) => { setInvert(e.target.checked); setPreview(null); }} />
+                            {/* Swaps black↔white in both the G5 bitstream and the preview PNG */}
+                            Invert colors
+                        </label>
 
                         <div className="importer-previews">
                             <div className="importer-preview-box">
