@@ -216,9 +216,7 @@ export default function Canvas({
             );
         }
         if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'drawG5') {
-            const { x, y, w, h } = item.type === 'drawG5'
-                ? { x: item.x, y: item.y, w: item.w, h: item.h }
-                : { x: item.x, y: item.y, w: item.w, h: item.h };
+            const { x, y, w, h } = item;
             return (
                 <g key={`handles-${index}`}>
                     {makeHandle('nw', x,         y,         'nw', index)}
@@ -329,6 +327,7 @@ export default function Canvas({
                         imageRendering="pixelated"
                         stroke={isSelected ? '#2563eb' : 'none'}
                         strokeWidth={isSelected ? 2 / scale : 0}
+                        strokeDasharray={isSelected ? `${6 / scale}` : undefined}
                         {...baseProps}
                     />
                 );

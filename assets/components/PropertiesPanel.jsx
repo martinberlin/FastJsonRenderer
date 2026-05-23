@@ -126,9 +126,14 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                             value={item.bg ?? maxColor}
                             onChange={(e) => onChange({ bg: parseInt(e.target.value, 10) })}
                         />
-                        <span className="color-preview" style={{
-                            background: `rgb(${Math.round(((item.bg ?? maxColor) / maxColor) * 255)},${Math.round(((item.bg ?? maxColor) / maxColor) * 255)},${Math.round(((item.bg ?? maxColor) / maxColor) * 255)})`,
-                        }}>{item.bg ?? maxColor}</span>
+                        {(() => {
+                            const bgV = Math.round(((item.bg ?? maxColor) / maxColor) * 255);
+                            return (
+                                <span className="color-preview" style={{
+                                    background: `rgb(${bgV},${bgV},${bgV})`,
+                                }}>{item.bg ?? maxColor}</span>
+                            );
+                        })()}
                     </div>
                     <div className="prop-row">
                         <label>G5 data</label>
