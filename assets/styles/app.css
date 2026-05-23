@@ -563,6 +563,12 @@ body {
     letter-spacing: .04em;
     color: var(--text-muted);
 }
+.importer-scale-btns {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+.importer-scale-btns .btn { min-width: 36px; text-align: center; }
 .importer-preview-empty {
     width: 140px;
     height: 100px;

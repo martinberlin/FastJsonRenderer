@@ -405,6 +405,8 @@ export default function Editor({ screenId, onBack }) {
                 <ImageImporter
                     onAdd={handleAdd}
                     onClose={() => setShowImporter(false)}
+                    displayWidth={displayWidth}
+                    displayHeight={displayHeight}
                 />
             )}
         </div>
