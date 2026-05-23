@@ -21,7 +21,8 @@
 
 // ── constants ────────────────────────────────────────────────────────────────
 
-const BB_BITMAP_MARKER_BYTES = [0xBF, 0xBB]; // 0xBBBF little-endian
+// BB_BITMAP_MARKER = 0xBBBF stored little-endian in the header
+const BB_BITMAP_MARKER = 0xBBBF;
 const MAX_FLIPS = 512; // max colour-change positions per line
 
 // Vertical codes [code, length] for V(-3) … V(3) (index = (delta+3)*2)
@@ -215,7 +216,7 @@ export function rgbaToG5(rgba, width, height, threshold = 128) {
     // BB_BITMAP header: [marker_lo, marker_hi, w_lo, w_hi, h_lo, h_hi, size_lo, size_hi]
     const out = new Uint8Array(8 + g5data.length);
     const dv  = new DataView(out.buffer);
-    dv.setUint16(0, 0xBBBF, true); // BB_BITMAP_MARKER little-endian
+    dv.setUint16(0, BB_BITMAP_MARKER, true); // 0xBBBF little-endian
     dv.setUint16(2, width,  true);
     dv.setUint16(4, height, true);
     dv.setUint16(6, g5data.length, true);
