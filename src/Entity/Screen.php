@@ -149,15 +149,25 @@ class Screen
 
     /**
      * Export screen as FastJsonDL-compatible JSON payload.
+     * Editor-only fields (e.g. `preview` on drawG5 items) are stripped.
      *
      * @return array<string, mixed>
      */
     public function toFastJsonDL(): array
     {
+        $exportItems = array_map(static function (array $item): array {
+            // 'preview' is a base64 PNG stored for the editor's live display only;
+            // the firmware drawG5() function does not need it.
+            if (($item['type'] ?? '') === 'drawG5') {
+                unset($item['preview']);
+            }
+            return $item;
+        }, $this->items);
+
         return [
             'display_bpp' => $this->displayBpp,
             'clear' => true,
-            'items' => $this->items,
+            'items' => $exportItems,
         ];
     }
 }

@@ -3,11 +3,36 @@ import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import JsonFooter from './JsonFooter';
+import ImageImporter from './ImageImporter';
 
 const SCALE_OPTIONS = [0.25, 0.33, 0.5, 0.67, 0.75, 1.0];
 const JSON_FOOTER_DEFAULT_H = 220;
 const JSON_FOOTER_MIN_H = 80;
 const JSON_FOOTER_MAX_H = 600;
+
+/**
+ * Apply a resize-handle drag to a rect-like item.
+ * @param {object} item        Original item { x, y, w, h, ...rest }
+ * @param {string} handleType  'nw'|'n'|'ne'|'e'|'se'|'s'|'sw'|'w'
+ * @param {number} dx          Delta x in display pixels
+ * @param {number} dy          Delta y in display pixels
+ * @returns {object} Updated item
+ */
+function applyRectHandle(item, handleType, dx, dy) {
+    let { x, y, w, h } = item;
+    switch (handleType) {
+        case 'nw': x += dx; y += dy; w -= dx; h -= dy; break;
+        case 'n':             y += dy;          h -= dy; break;
+        case 'ne':            y += dy; w += dx; h -= dy; break;
+        case 'e':                      w += dx;          break;
+        case 'se':                     w += dx; h += dy; break;
+        case 's':                               h += dy; break;
+        case 'sw': x += dx;            w -= dx; h += dy; break;
+        case 'w':  x += dx;            w -= dx;          break;
+        default: break;
+    }
+    return { ...item, x, y, w: Math.max(1, w), h: Math.max(1, h) };
+}
 
 /**
  * Editor – the full canvas-based screen design interface.
@@ -29,6 +54,13 @@ export default function Editor({ screenId, onBack }) {
 
     // Unsaved items buffer (working copy of screen.items during editing)
     const [items, setItems] = useState([]);
+
+    // Line-draw mode state
+    const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine'
+    const [lineFirstPoint, setLineFirstPoint] = useState(null); // null | { x, y }
+
+    // Image importer modal
+    const [showImporter, setShowImporter] = useState(false);
 
     // Ref used during footer drag-to-resize
     const footerDragRef = useRef(null);
@@ -126,11 +158,27 @@ export default function Editor({ screenId, onBack }) {
     }, [screen]);
 
     // ------------ canvas drag --------------------------------------------
-    const handleMove = useCallback((index, dx, dy, origItem) => {
+    const handleMove = useCallback((index, dx, dy, origItem, handleType) => {
         setItems((prev) => {
             const next = [...prev];
             const item = origItem;
-            if (item.type === 'drawLine') {
+
+            if (handleType) {
+                // Handle-based resize / endpoint drag
+                if (item.type === 'drawLine') {
+                    if (handleType === 'p1') {
+                        next[index] = { ...item, x1: item.x1 + dx, y1: item.y1 + dy };
+                    } else if (handleType === 'p2') {
+                        next[index] = { ...item, x2: item.x2 + dx, y2: item.y2 + dy };
+                    }
+                } else if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'drawG5') {
+                    next[index] = applyRectHandle(item, handleType, dx, dy);
+                } else if (item.type === 'fillCircle' || item.type === 'drawCircle') {
+                    if (handleType === 'r') {
+                        next[index] = { ...item, r: Math.max(1, item.r + dx) };
+                    }
+                }
+            } else if (item.type === 'drawLine') {
                 next[index] = { ...item, x1: item.x1 + dx, y1: item.y1 + dy, x2: item.x2 + dx, y2: item.y2 + dy };
             } else {
                 next[index] = { ...item, x: item.x + dx, y: item.y + dy };
@@ -142,6 +190,40 @@ export default function Editor({ screenId, onBack }) {
     const handleCommitMove = useCallback(() => {
         // Nothing special needed – items state is already updated during drag
     }, []);
+
+    // ------------ text inline edit ---------------------------------------
+    const handleTextEdit = useCallback((index, newText) => {
+        setItems((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], string: newText };
+            return next;
+        });
+    }, []);
+
+    // ------------ line two-point drawing ---------------------------------
+    const handleStartDraw = useCallback((mode) => {
+        setDrawMode((prev) => {
+            if (prev === mode) return null; // toggle off
+            return mode;
+        });
+        setLineFirstPoint(null);
+        setSelectedIndex(null);
+    }, []);
+
+    const handleCanvasClick = useCallback((x, y) => {
+        if (drawMode === 'drawLine') {
+            if (!lineFirstPoint) {
+                setLineFirstPoint({ x, y });
+            } else {
+                // Complete the line
+                handleAdd({ type: 'drawLine', x1: lineFirstPoint.x, y1: lineFirstPoint.y, x2: x, y2: y, c: 0 });
+                setDrawMode(null);
+                setLineFirstPoint(null);
+            }
+        } else {
+            setSelectedIndex(null);
+        }
+    }, [drawMode, lineFirstPoint, handleAdd]);
 
     // ------------ property edit ------------------------------------------
     const handlePropChange = useCallback((patch) => {
@@ -201,10 +283,16 @@ export default function Editor({ screenId, onBack }) {
                 e.preventDefault();
                 handleSave();
             }
+            if (e.key === 'Escape') {
+                if (drawMode) {
+                    setDrawMode(null);
+                    setLineFirstPoint(null);
+                }
+            }
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [handleDelete, handleSave]);
+    }, [handleDelete, handleSave, drawMode]);
 
     if (loading) return <div className="status-msg">Loading screen…</div>;
 
@@ -255,7 +343,12 @@ export default function Editor({ screenId, onBack }) {
             {/* ── Main area ───────────────────────────────────────────── */}
             <div className="editor-body">
                 {/* Left: toolbar */}
-                <Toolbar onAdd={handleAdd} />
+                <Toolbar
+                    onAdd={handleAdd}
+                    onStartDraw={handleStartDraw}
+                    onImportImage={() => setShowImporter(true)}
+                    drawMode={drawMode}
+                />
 
                 {/* Centre: scrollable canvas */}
                 <div className="canvas-area">
@@ -272,10 +365,14 @@ export default function Editor({ screenId, onBack }) {
                             onSelect={setSelectedIndex}
                             onMove={handleMove}
                             onCommitMove={handleCommitMove}
+                            onTextEdit={handleTextEdit}
                             displayWidth={displayWidth}
                             displayHeight={displayHeight}
                             displayBpp={displayBpp}
                             scale={scale}
+                            drawMode={drawMode}
+                            lineFirstPoint={lineFirstPoint}
+                            onCanvasClick={handleCanvasClick}
                         />
                     </div>
                 </div>
@@ -300,6 +397,14 @@ export default function Editor({ screenId, onBack }) {
                     height={jsonFooterHeight}
                     onDragHandleMouseDown={handleFooterDragStart}
                     onClose={() => setShowJson(false)}
+                />
+            )}
+
+            {/* ── Image import modal ─────────────────────────────── */}
+            {showImporter && (
+                <ImageImporter
+                    onAdd={handleAdd}
+                    onClose={() => setShowImporter(false)}
                 />
             )}
         </div>

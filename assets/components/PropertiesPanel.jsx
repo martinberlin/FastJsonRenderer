@@ -72,7 +72,7 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
             {item.type === 'drawString' && (
                 <>
                     <div className="prop-row">
-                        <label>Text</label>
+                        <label>Text <span className="hint">double-click on canvas to edit</span></label>
                         <input
                             type="text"
                             value={item.string ?? ''}
@@ -110,12 +110,32 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                 </>
             )}
 
-            {/* Circle */}
-            {(item.type === 'fillCircle' || item.type === 'drawCircle') && (
+            {/* G5 image */}
+            {item.type === 'drawG5' && (
                 <>
-                    <NumField label="Center X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
-                    <NumField label="Center Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
-                    <NumField label="Radius" value={item.r} onChange={(v) => onChange({ r: Math.max(1, v) })} min={1} />
+                    <NumField label="X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
+                    <NumField label="Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
+                    <NumField label="Width" value={item.w} onChange={(v) => onChange({ w: Math.max(1, v) })} min={1} />
+                    <NumField label="Height" value={item.h} onChange={(v) => onChange({ h: Math.max(1, v) })} min={1} />
+                    <div className="prop-row">
+                        <label>BG Color <span className="hint">background</span></label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxColor}
+                            value={item.bg ?? maxColor}
+                            onChange={(e) => onChange({ bg: parseInt(e.target.value, 10) })}
+                        />
+                        <span className="color-preview" style={{
+                            background: `rgb(${Math.round(((item.bg ?? maxColor) / maxColor) * 255)},${Math.round(((item.bg ?? maxColor) / maxColor) * 255)},${Math.round(((item.bg ?? maxColor) / maxColor) * 255)})`,
+                        }}>{item.bg ?? maxColor}</span>
+                    </div>
+                    <div className="prop-row">
+                        <label>G5 data</label>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {item.data ? `${Math.ceil(item.data.length * 3 / 4)} bytes compressed` : '—'}
+                        </span>
+                    </div>
                 </>
             )}
         </div>
