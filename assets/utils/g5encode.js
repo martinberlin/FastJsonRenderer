@@ -242,6 +242,9 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
     src.width = targetWidth;
     src.height = targetHeight;
     const sctx = src.getContext('2d');
+    // Fill white first so transparent PNG areas become white, not black
+    sctx.fillStyle = '#ffffff';
+    sctx.fillRect(0, 0, targetWidth, targetHeight);
     sctx.filter = 'grayscale(1)';
     sctx.drawImage(img, 0, 0, targetWidth, targetHeight);
     const imageData = sctx.getImageData(0, 0, targetWidth, targetHeight);
