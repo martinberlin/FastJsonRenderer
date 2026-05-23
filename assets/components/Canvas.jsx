@@ -7,12 +7,15 @@ const toGrayColor = (c = 0, bpp = 4) => {
     return `rgb(${v},${v},${v})`;
 };
 
+// Font sizes are in display pixels matching the firmware's fontconvert tool output.
+// fontconvert renders TTF fonts at <pt size> points @ 141 DPI, so the actual
+// pixel height = Math.round(pt * 141 / 72). E.g. Ubuntu40 = round(40*141/72) = 78 px.
 const FONT_META = {
-    Ubuntu40: { size: 40, family: 'Ubuntu, sans-serif', weight: 400 },
-    Ubuntu40b: { size: 40, family: 'Ubuntu, sans-serif', weight: 700 },
-    Ubuntu30: { size: 30, family: 'Ubuntu, sans-serif', weight: 400 },
-    Ubuntu20: { size: 20, family: 'Ubuntu, sans-serif', weight: 400 },
-    Monospace12: { size: 12, family: '"Roboto Mono", "Courier New", monospace', weight: 400 },
+    Ubuntu40:    { size: 78, family: 'Ubuntu, sans-serif', weight: 400 },
+    Ubuntu40b:   { size: 78, family: 'Ubuntu, sans-serif', weight: 700 },
+    Ubuntu30:    { size: 59, family: 'Ubuntu, sans-serif', weight: 400 },
+    Ubuntu20:    { size: 39, family: 'Ubuntu, sans-serif', weight: 400 },
+    Monospace12: { size: 24, family: '"Roboto Mono", "Courier New", monospace', weight: 400 },
 };
 const DEFAULT_FONT_META = FONT_META.Ubuntu30;
 
