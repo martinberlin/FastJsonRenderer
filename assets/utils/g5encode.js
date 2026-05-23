@@ -4,7 +4,7 @@
  * G5 is a 1bpp compressed bitmap format used by the FastEPD firmware
  * (https://github.com/bitbank2/FastEPD). This encoder converts RGBA pixel
  * data to a portable 1bpp run-length-encoded format compatible with the
- * drawG5() firmware function.
+ * loadG5Image firmware function.
  *
  * Wire format
  * ───────────
@@ -128,10 +128,17 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128) {
 }
 
 /**
- * Base64-encode a Uint8Array for JSON storage.
+ * Convert a Uint8Array of G5 bytes to the firmware-compatible hex-string array.
+ * Each byte becomes the string "0xNN" (lowercase hex, zero-padded to 2 digits).
+ * Example: [0xbf, 0x00] → ["0xbf","0x00"]
+ *
+ * @param {Uint8Array} data
+ * @returns {string[]}
  */
-export function g5ToBase64(data) {
-    let bin = '';
-    for (let i = 0; i < data.length; i++) bin += String.fromCharCode(data[i]);
-    return btoa(bin);
+export function g5ToHexArray(data) {
+    const out = new Array(data.length);
+    for (let i = 0; i < data.length; i++) {
+        out[i] = '0x' + data[i].toString(16).padStart(2, '0');
+    }
+    return out;
 }

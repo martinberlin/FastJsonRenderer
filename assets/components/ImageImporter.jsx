@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { imageToG5, g5ToBase64 } from '../utils/g5encode';
+import { imageToG5, g5ToHexArray } from '../utils/g5encode';
 
 /**
  * ImageImporter – modal dialog to import a PNG/SVG/JPEG image, preview it as
  * a 1-bit G5 icon, and add it to the canvas.
  *
  * Props:
- *  - onAdd(item)  Called with the new drawG5 item when the user confirms.
+ *  - onAdd(item)  Called with the new loadG5Image item when the user confirms.
  *  - onClose()    Called when the user cancels or closes.
  */
 export default function ImageImporter({ onAdd, onClose }) {
@@ -69,15 +69,15 @@ export default function ImageImporter({ onAdd, onClose }) {
         img.onload = () => {
             const { g5, previewDataUrl } = imageToG5(img, targetW, targetH, threshold);
             onAdd({
-                type:    'drawG5',
+                type:    'loadG5Image',
                 x:       50,
                 y:       50,
                 w:       targetW,
                 h:       targetH,
-                data:    g5ToBase64(g5),
+                data:    g5ToHexArray(g5),
                 preview: previewDataUrl, // editor-only; stripped on firmware export
-                c:       0,
-                bg:      1,
+                fg:      0,
+                bg:      15,
             });
             onClose();
         };

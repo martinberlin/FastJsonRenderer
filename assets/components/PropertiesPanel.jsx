@@ -111,14 +111,32 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
             )}
 
             {/* G5 image */}
-            {item.type === 'drawG5' && (
+            {item.type === 'loadG5Image' && (
                 <>
                     <NumField label="X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
                     <NumField label="Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
                     <NumField label="Width" value={item.w} onChange={(v) => onChange({ w: Math.max(1, v) })} min={1} />
                     <NumField label="Height" value={item.h} onChange={(v) => onChange({ h: Math.max(1, v) })} min={1} />
                     <div className="prop-row">
-                        <label>BG Color <span className="hint">background</span></label>
+                        <label>FG Color <span className="hint">foreground (1-bits)</span></label>
+                        <input
+                            type="range"
+                            min={0}
+                            max={maxColor}
+                            value={item.fg ?? 0}
+                            onChange={(e) => onChange({ fg: parseInt(e.target.value, 10) })}
+                        />
+                        {(() => {
+                            const fgV = Math.round(((item.fg ?? 0) / maxColor) * 255);
+                            return (
+                                <span className="color-preview" style={{
+                                    background: `rgb(${fgV},${fgV},${fgV})`,
+                                }}>{item.fg ?? 0}</span>
+                            );
+                        })()}
+                    </div>
+                    <div className="prop-row">
+                        <label>BG Color <span className="hint">background (0-bits)</span></label>
                         <input
                             type="range"
                             min={0}
@@ -138,7 +156,7 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                     <div className="prop-row">
                         <label>G5 data</label>
                         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            {item.data ? `${Math.ceil(item.data.length * 3 / 4)} bytes compressed` : '—'}
+                            {item.data ? `${Array.isArray(item.data) ? item.data.length : '?'} bytes` : '—'}
                         </span>
                     </div>
                 </>

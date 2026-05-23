@@ -42,7 +42,7 @@ const getItemBounds = (item) => {
         case 'fillCircle':
         case 'drawCircle':
             return { x: item.x - item.r, y: item.y - item.r, w: item.r * 2, h: item.r * 2 };
-        case 'drawG5':
+        case 'loadG5Image':
             return { x: item.x, y: item.y, w: item.w, h: item.h };
         default:
             return null;
@@ -156,11 +156,13 @@ export default function Canvas({
 
     // ── background click ─────────────────────────────────────────────────
     const handleBackgroundMouseDown = useCallback((e) => {
-        if (e.target !== e.currentTarget) return;
         if (drawMode === 'drawLine' && onCanvasClick) {
+            // In draw mode accept clicks anywhere on the SVG (item clicks call
+            // onCanvasClick themselves via handleItemMouseDown + stopPropagation,
+            // so reaching here always means an empty-canvas click).
             const { x, y } = clientToSvg(e.clientX, e.clientY);
             onCanvasClick(x, y);
-        } else {
+        } else if (e.target === e.currentTarget) {
             onSelect(null);
         }
     }, [drawMode, onCanvasClick, onSelect, clientToSvg]);
@@ -215,7 +217,7 @@ export default function Canvas({
                 </g>
             );
         }
-        if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'drawG5') {
+        if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'loadG5Image') {
             const { x, y, w, h } = item;
             return (
                 <g key={`handles-${index}`}>
@@ -315,7 +317,7 @@ export default function Canvas({
                         strokeDasharray={isSelected ? `${6 / scale}` : undefined}
                         {...baseProps} />
                 );
-            case 'drawG5':
+            case 'loadG5Image':
                 return (
                     <image
                         key={index}
