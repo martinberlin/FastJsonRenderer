@@ -46,7 +46,7 @@ const ADD_TOOLS = [
  *  - drawColorMax             Maximum colour value for the current display BPP.
  *  - onDrawColorChange(c)     Called when the draw colour changes.
  */
-export default function Toolbar({ onAdd, onStartDraw, onSelectMode, onImportImage, drawMode, drawColor, drawColorMax, onDrawColorChange }) {
+export default function Toolbar({ onAdd, onStartDraw, onSelectMode, onImportImage, drawMode, drawColor, drawColorMax, onDrawColorChange, currentUser }) {
     const maxColor = drawColorMax ?? 15;
 
     return (
@@ -128,14 +128,15 @@ export default function Toolbar({ onAdd, onStartDraw, onSelectMode, onImportImag
 
             <div className="toolbar-divider" />
 
-            {/* G5 image import */}
+            {/* G5 image import — requires login */}
             <button
                 className="toolbar-btn toolbar-btn-image"
-                title="Import PNG/SVG image and convert to 1-bit G5 icon"
-                onClick={onImportImage}
+                title={currentUser ? 'Import PNG/SVG image and convert to 1-bit G5 icon' : 'Sign in to use image import'}
+                onClick={currentUser ? onImportImage : () => { window.location.href = '/login'; }}
+                style={currentUser ? {} : { opacity: 0.5 }}
             >
                 <span className="toolbar-icon">🖼</span>
-                <span className="toolbar-label">Import Image</span>
+                <span className="toolbar-label">Import Image{!currentUser ? ' 🔒' : ''}</span>
             </button>
         </div>
     );

@@ -16,6 +16,16 @@ export default function App() {
         return { view: 'list' };
     });
 
+    // Current authenticated user (null = guest)
+    const [currentUser, setCurrentUser] = useState(undefined); // undefined = loading
+
+    useEffect(() => {
+        fetch('/api/me')
+            .then((r) => r.json())
+            .then((u) => setCurrentUser(u))
+            .catch(() => setCurrentUser(null));
+    }, []);
+
     // Keep the browser URL in sync
     useEffect(() => {
         const url =
@@ -29,14 +39,24 @@ export default function App() {
 
     const navigate = (view, screenId = null) => setRoute({ view, screenId });
 
+    // Don't render until we know the auth state
+    if (currentUser === undefined) return null;
+
     if (route.view === 'editor') {
         return (
             <Editor
                 screenId={route.screenId}
                 onBack={() => navigate('list')}
+                currentUser={currentUser}
             />
         );
     }
 
-    return <ScreenList onEdit={(id) => navigate('editor', id)} onNew={() => navigate('editor', null)} />;
+    return (
+        <ScreenList
+            onEdit={(id) => navigate('editor', id)}
+            onNew={() => navigate('editor', null)}
+            currentUser={currentUser}
+        />
+    );
 }

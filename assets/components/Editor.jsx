@@ -42,7 +42,7 @@ function applyRectHandle(item, handleType, dx, dy) {
  *  - screenId   ID of an existing screen to load, or null to start fresh
  *  - onBack()   Navigate back to the screen list
  */
-export default function Editor({ screenId, onBack }) {
+export default function Editor({ screenId, onBack, currentUser }) {
     const [screen, setScreen] = useState(null);
     const [loading, setLoading] = useState(!!screenId);
     const [saving, setSaving] = useState(false);
@@ -387,9 +387,19 @@ export default function Editor({ screenId, onBack }) {
                     <button className="btn btn-secondary btn-sm" onClick={handleExport}>
                         Export
                     </button>
-                    <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
-                        {saving ? 'Saving…' : 'Save'}
-                    </button>
+                    {currentUser ? (
+                        <>
+                            <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
+                                {saving ? 'Saving…' : 'Save'}
+                            </button>
+                            <span className="auth-greeting btn-sm">👤 {currentUser.firstName}</span>
+                            <a href="/logout" className="btn btn-secondary btn-sm">Sign out</a>
+                        </>
+                    ) : (
+                        <a href="/login" className="btn btn-primary btn-sm" title="Sign in to save your work">
+                            🔑 Sign in to Save
+                        </a>
+                    )}
                 </div>
             </header>
 
@@ -407,6 +417,7 @@ export default function Editor({ screenId, onBack }) {
                     drawColor={drawColor}
                     drawColorMax={(1 << displayBpp) - 1}
                     onDrawColorChange={setDrawColor}
+                    currentUser={currentUser}
                 />
 
                 {/* Centre: scrollable canvas */}

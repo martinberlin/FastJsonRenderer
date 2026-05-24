@@ -78,9 +78,36 @@ ddev npm run watch
 - **Export JSON** – download a `.json` file ready to POST to your ESP32
 - **Persistence** – screens saved to MariaDB via Doctrine ORM (Symfony 7)
 
+## Authentication (GitHub OAuth)
+
+FastJsonRenderer supports optional GitHub login so users can save their screens.  
+**Without signing in**: draw, arrange elements, and send via BLE — everything works.  
+**After signing in**: Save screens to the database and use the G5 image import feature.
+
+### Setup
+
+1. **Register a GitHub OAuth App** at <https://github.com/settings/applications/new>:
+   - **Homepage URL**: your public domain, e.g. `https://fastjsonrenderer.example.com`
+   - **Authorization callback URL**: `https://fastjsonrenderer.example.com/connect/github/check`
+
+2. **Set environment variables** in your `.env.local` (never commit this file):
+   ```bash
+   GITHUB_CLIENT_ID=Ov23liXXXXXXXXXXXXXX
+   GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+3. **Apply the new database migration** (adds the `user` table and `screen.user_id` column):
+   ```bash
+   ddev exec php bin/console doctrine:migrations:migrate --no-interaction
+   # or without DDEV:
+   php bin/console doctrine:migrations:migrate --no-interaction
+   ```
+
+That's all. Users will see a **Sign in with GitHub** button on the home page and in the editor toolbar.
+
 ---
 
-## Technology stack
+
 
 | Layer | Technology |
 |-------|-----------|
@@ -115,14 +142,15 @@ Or use `make <target>` shortcuts: `make start`, `make stop`, `make build`, `make
 
 The Symfony backend exposes a REST API at `/api/screens`:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/screens` | List all screens |
-| `POST` | `/api/screens` | Create a new screen |
-| `GET` | `/api/screens/{id}` | Get a single screen with all items |
-| `PUT` | `/api/screens/{id}` | Update a screen |
-| `DELETE` | `/api/screens/{id}` | Delete a screen |
-| `GET` | `/api/screens/{id}/export` | Download FastJsonDL JSON payload |
+| Method | Path | Description | Auth required |
+|--------|------|-------------|--------------|
+| `GET` | `/api/me` | Current logged-in user info (or `null`) | No |
+| `GET` | `/api/screens` | List screens owned by the current user | Yes (returns `[]` for guests) |
+| `POST` | `/api/screens` | Create a new screen | Yes |
+| `GET` | `/api/screens/{id}` | Get a single screen with all items | Yes (owner only) |
+| `PUT` | `/api/screens/{id}` | Update a screen | Yes (owner only) |
+| `DELETE` | `/api/screens/{id}` | Delete a screen | Yes (owner only) |
+| `GET` | `/api/screens/{id}/export` | Download FastJsonDL JSON payload | Yes (owner only) |
 
 ### Screen payload (request / response)
 
@@ -190,7 +218,7 @@ The `data` array uses bare 2-character lowercase hex strings (e.g. `"bf"`) rathe
 - Copy / paste elements
 - Grid snapping
 - Custom display resolution
-- User accounts (multi-user)
+- Google OAuth login (in addition to GitHub)
 
 ---
 

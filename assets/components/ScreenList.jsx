@@ -8,8 +8,9 @@ const DISPLAY_PRESETS = [
 
 /**
  * Lists all saved screens and provides Create / Edit / Delete actions.
+ * Requires a logged-in user to create/edit/delete screens.
  */
-export default function ScreenList({ onEdit, onNew }) {
+export default function ScreenList({ onEdit, onNew, currentUser }) {
     const [screens, setScreens] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -31,7 +32,7 @@ export default function ScreenList({ onEdit, onNew }) {
         }
     };
 
-    useEffect(() => { fetchScreens(); }, []);
+    useEffect(() => { fetchScreens(); }, [currentUser]);
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -80,9 +81,21 @@ export default function ScreenList({ onEdit, onNew }) {
                     <h1>FastJsonRenderer</h1>
                     <span className="header-sub">ePaper Screen Designer for FastJsonDL</span>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-                    + New Screen
-                </button>
+                <div className="header-auth">
+                    {currentUser ? (
+                        <>
+                            <span className="auth-greeting">👤 {currentUser.firstName}</span>
+                            <a href="/logout" className="btn btn-secondary btn-sm">Sign out</a>
+                        </>
+                    ) : (
+                        <a href="/login" className="btn btn-primary btn-sm">Sign in with GitHub</a>
+                    )}
+                </div>
+                {currentUser && (
+                    <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+                        + New Screen
+                    </button>
+                )}
             </header>
 
             {showCreate && (
@@ -122,7 +135,17 @@ export default function ScreenList({ onEdit, onNew }) {
             <main className="screen-grid-container">
                 {loading && <p className="status-msg">Loading…</p>}
                 {error && <p className="status-msg error">{error}</p>}
-                {!loading && !error && screens.length === 0 && (
+                {!loading && !error && !currentUser && (
+                    <div className="empty-state">
+                        <p>Sign in to save and manage your ePaper screen designs.</p>
+                        <p className="empty-state-sub">You can still open the editor and draw/send via BLE without signing in.</p>
+                        <div className="empty-state-actions">
+                            <a href="/login" className="btn btn-primary">Sign in with GitHub</a>
+                            <button className="btn btn-secondary" onClick={onNew}>Try the editor (no save)</button>
+                        </div>
+                    </div>
+                )}
+                {!loading && !error && currentUser && screens.length === 0 && (
                     <div className="empty-state">
                         <p>No screens yet.</p>
                         <button className="btn btn-primary" onClick={() => setShowCreate(true)}>

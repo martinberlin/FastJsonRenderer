@@ -89,6 +89,8 @@ body {
 .status-msg.error { color: var(--danger); }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 .empty-state p { margin-bottom: 16px; }
+.empty-state .empty-state-sub { font-size: 13px; margin-bottom: 8px; }
+.empty-state-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
 
 /* =========================================================
    Screen List
@@ -108,6 +110,8 @@ body {
 .header-icon { font-size: 22px; }
 .app-header h1 { margin: 0; font-size: 18px; font-weight: 700; }
 .header-sub { color: var(--text-muted); font-size: 13px; }
+.header-auth { display: flex; align-items: center; gap: 8px; }
+.auth-greeting { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
 
 .screen-grid-container { flex: 1; padding: 28px 24px; }
 
