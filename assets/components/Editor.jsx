@@ -56,8 +56,11 @@ export default function Editor({ screenId, onBack }) {
     const [items, setItems] = useState([]);
 
     // Line-draw mode state
-    const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine'
+    const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine' | 'drawPixel'
     const [lineFirstPoint, setLineFirstPoint] = useState(null); // null | { x, y }
+
+    // Draw color for pixel-paint mode (0 = black)
+    const [drawColor, setDrawColor] = useState(0);
 
     // Image importer modal
     const [showImporter, setShowImporter] = useState(false);
@@ -220,10 +223,21 @@ export default function Editor({ screenId, onBack }) {
                 setDrawMode(null);
                 setLineFirstPoint(null);
             }
+        } else if (drawMode === 'drawPixel') {
+            // Place pixel at the exact canvas coordinate (no auto-offset)
+            setItems((prev) => [...prev, { type: 'drawPixel', x, y, c: drawColor }]);
         } else {
             setSelectedIndex(null);
         }
-    }, [drawMode, lineFirstPoint, handleAdd]);
+    }, [drawMode, lineFirstPoint, handleAdd, drawColor]);
+
+    // ------------ pixel paint drag ----------------------------------------
+    // Called continuously during a mouse-drag in drawPixel mode
+    const handleCanvasPaint = useCallback((x, y) => {
+        if (drawMode === 'drawPixel') {
+            setItems((prev) => [...prev, { type: 'drawPixel', x, y, c: drawColor }]);
+        }
+    }, [drawMode, drawColor]);
 
     // ------------ property edit ------------------------------------------
     const handlePropChange = useCallback((patch) => {
@@ -348,6 +362,9 @@ export default function Editor({ screenId, onBack }) {
                     onStartDraw={handleStartDraw}
                     onImportImage={() => setShowImporter(true)}
                     drawMode={drawMode}
+                    drawColor={drawColor}
+                    drawColorMax={(1 << displayBpp) - 1}
+                    onDrawColorChange={setDrawColor}
                 />
 
                 {/* Centre: scrollable canvas */}
@@ -373,6 +390,7 @@ export default function Editor({ screenId, onBack }) {
                             drawMode={drawMode}
                             lineFirstPoint={lineFirstPoint}
                             onCanvasClick={handleCanvasClick}
+                            onCanvasPaint={handleCanvasPaint}
                         />
                     </div>
                 </div>

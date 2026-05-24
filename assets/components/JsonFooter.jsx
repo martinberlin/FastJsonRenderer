@@ -1,4 +1,14 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+
+// BLE_CHUNK_SIZE: maximum bytes per BLE write-without-response operation.
+// Most modern BLE stacks negotiate an MTU of ~512 bytes, but 512 is a safe default
+// that keeps each packet within a single connection interval.
+const BLE_CHUNK_SIZE = 512;
+
+// Default NUS (Nordic UART Service) UUIDs used by the FastJsonDL firmware.
+// These can be overridden by the user in the BLE modal.
+const DEFAULT_SERVICE_UUID      = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const DEFAULT_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 
 /**
  * JsonFooter – a collapsible, resizable footer panel that shows the live
@@ -12,6 +22,11 @@ import React, { useState } from 'react';
  */
 export default function JsonFooter({ screen, height, onDragHandleMouseDown, onClose }) {
     const [copied, setCopied] = useState(false);
+    const [showBle, setShowBle] = useState(false);
+    const [bleStatus, setBleStatus] = useState(null);   // null | string
+    const [bleProgress, setBleProgress] = useState(null); // null | { sent, total }
+    const [serviceUuid, setServiceUuid] = useState(DEFAULT_SERVICE_UUID);
+    const [charUuid, setCharUuid] = useState(DEFAULT_CHARACTERISTIC_UUID);
 
     if (!screen) return null;
 
@@ -22,6 +37,9 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
     };
     const json = JSON.stringify(payload, null, 2);
     const itemCount = screen.items?.length ?? 0;
+    const byteCount = new TextEncoder().encode(json).length;
+    const kbCount   = (byteCount / 1024).toFixed(1);
+    const sizeWarn  = byteCount > 50 * 1024;
 
     const handleCopy = async () => {
         try {
@@ -38,6 +56,46 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    // ── BLE send ──────────────────────────────────────────────────────────
+    const handleBleSend = useCallback(async () => {
+        if (!navigator.bluetooth) {
+            setBleStatus('❌ Web Bluetooth is not available. Use Chrome/Edge on HTTPS or localhost.');
+            return;
+        }
+        setBleStatus('🔍 Requesting BLE device…');
+        setBleProgress(null);
+        try {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ services: [serviceUuid] }],
+            });
+            setBleStatus(`🔗 Connecting to "${device.name ?? 'device'}"…`);
+            const server = await device.gatt.connect();
+            setBleStatus('📡 Accessing service…');
+            const service = await server.getPrimaryService(serviceUuid);
+            const characteristic = await service.getCharacteristic(charUuid);
+
+            const data = new TextEncoder().encode(json);
+            const total = data.length;
+            let sent = 0;
+            setBleStatus('📤 Sending…');
+            while (sent < total) {
+                const chunk = data.slice(sent, sent + BLE_CHUNK_SIZE);
+                await characteristic.writeValueWithoutResponse(chunk);
+                sent += chunk.length;
+                setBleProgress({ sent, total });
+            }
+            setBleStatus(`✅ Sent ${total} bytes successfully.`);
+            setBleProgress(null);
+        } catch (err) {
+            if (err.name === 'NotFoundError') {
+                setBleStatus('ℹ️ No device selected.');
+            } else {
+                setBleStatus(`❌ BLE error: ${err.message}`);
+            }
+            setBleProgress(null);
+        }
+    }, [json, serviceUuid, charUuid]);
 
     return (
         <div className="json-footer" style={{ height }}>
@@ -56,6 +114,11 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                     <span className="json-footer-count">
                         {itemCount} item{itemCount !== 1 ? 's' : ''}
                     </span>
+                    <span className={`json-footer-size${sizeWarn ? ' json-footer-size-warn' : ''}`}
+                        title={sizeWarn ? 'Payload exceeds 50 KB – BLE transmission may be slow' : `${byteCount} bytes`}
+                    >
+                        {kbCount} KB{sizeWarn ? ' ⚠' : ''}
+                    </span>
                 </span>
 
                 <div className="json-footer-actions">
@@ -67,6 +130,13 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                         {copied ? '✓ Copied!' : 'Copy'}
                     </button>
                     <button
+                        className={`btn btn-secondary btn-sm${showBle ? ' btn-active' : ''}`}
+                        onClick={() => { setShowBle((v) => !v); setBleStatus(null); setBleProgress(null); }}
+                        title="Send JSON to ESP32 via Bluetooth"
+                    >
+                        🔵 BLE
+                    </button>
+                    <button
                         className="json-footer-close"
                         onClick={onClose}
                         title="Close JSON preview"
@@ -75,6 +145,54 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                     </button>
                 </div>
             </div>
+
+            {/* BLE panel */}
+            {showBle && (
+                <div className="ble-panel">
+                    <div className="ble-panel-row">
+                        <label className="ble-label">Service UUID</label>
+                        <input
+                            className="ble-input"
+                            value={serviceUuid}
+                            onChange={(e) => setServiceUuid(e.target.value.trim())}
+                            spellCheck={false}
+                        />
+                    </div>
+                    <div className="ble-panel-row">
+                        <label className="ble-label">Characteristic UUID</label>
+                        <input
+                            className="ble-input"
+                            value={charUuid}
+                            onChange={(e) => setCharUuid(e.target.value.trim())}
+                            spellCheck={false}
+                        />
+                    </div>
+                    <div className="ble-panel-row">
+                        <button
+                            className="btn btn-primary btn-sm"
+                            onClick={handleBleSend}
+                            disabled={!!bleProgress}
+                        >
+                            {bleProgress ? `Sending… ${bleProgress.sent}/${bleProgress.total} B` : 'Connect & Send'}
+                        </button>
+                        {bleProgress && (
+                            <div className="ble-progress-bar">
+                                <div
+                                    className="ble-progress-fill"
+                                    style={{ width: `${Math.round((bleProgress.sent / bleProgress.total) * 100)}%` }}
+                                />
+                            </div>
+                        )}
+                        {bleStatus && (
+                            <span className="ble-status">{bleStatus}</span>
+                        )}
+                    </div>
+                    <p className="ble-hint">
+                        Requires Chrome / Edge on HTTPS (or localhost). The UUIDs above match the default Nordic
+                        UART Service used by FastJsonDL firmware — change them if your firmware uses custom UUIDs.
+                    </p>
+                </div>
+            )}
 
             {/* Scrollable code block */}
             <pre className="json-footer-code">{json}</pre>

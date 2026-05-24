@@ -44,6 +44,8 @@ const getItemBounds = (item) => {
             return { x: item.x - item.r, y: item.y - item.r, w: item.r * 2, h: item.r * 2 };
         case 'loadG5Image':
             return { x: item.x, y: item.y, w: item.w, h: item.h };
+        case 'drawPixel':
+            return { x: item.x, y: item.y, w: 1, h: 1 };
         default:
             return null;
     }
@@ -73,9 +75,10 @@ const HANDLE_CURSORS = {
  *  - displayWidth/Height Display size in pixels
  *  - displayBpp          Bits per pixel (1 | 2 | 4)
  *  - scale               CSS scale factor (e.g. 0.5)
- *  - drawMode            null | 'drawLine'
+ *  - drawMode            null | 'drawLine' | 'drawPixel'
  *  - lineFirstPoint      null | { x, y } – first click point when drawing a line
  *  - onCanvasClick(x, y) Called (in SVG coordinates) when canvas bg is clicked
+ *  - onCanvasPaint(x, y) Called while dragging in drawPixel mode (for continuous pixel placement)
  */
 export default function Canvas({
     items,
@@ -91,6 +94,7 @@ export default function Canvas({
     drawMode,
     lineFirstPoint,
     onCanvasClick,
+    onCanvasPaint,
 }) {
     // Drag state: null | { index, startClientX, startClientY, origItem, handleType }
     const drag = useRef(null);
@@ -98,6 +102,9 @@ export default function Canvas({
     const svgRef = useRef(null);
     // Inline text editing state
     const [editingText, setEditingText] = useState(null); // { index, value, screenX, screenY, fontMeta }
+    // Pixel-paint drag state
+    const isPainting = useRef(false);
+    const lastPaintCoord = useRef(null);
 
     // ── helper: translate a client-position event to SVG coordinates ─────
     const clientToSvg = useCallback((clientX, clientY) => {
@@ -115,6 +122,14 @@ export default function Canvas({
         if (drawMode === 'drawLine' && onCanvasClick) {
             const { x, y } = clientToSvg(e.clientX, e.clientY);
             onCanvasClick(x, y);
+            return;
+        }
+        // In pixel-paint mode, start painting from the clicked item's position
+        if (drawMode === 'drawPixel' && onCanvasClick) {
+            const { x, y } = clientToSvg(e.clientX, e.clientY);
+            onCanvasClick(x, y);
+            isPainting.current = true;
+            lastPaintCoord.current = { x, y };
             return;
         }
         onSelect(index);
@@ -140,14 +155,28 @@ export default function Canvas({
     }, [items]);
 
     const handleMouseMove = useCallback((e) => {
+        // Pixel-paint drag: place a pixel at each new position while button is held
+        if (isPainting.current && drawMode === 'drawPixel' && onCanvasPaint) {
+            const { x, y } = clientToSvg(e.clientX, e.clientY);
+            const last = lastPaintCoord.current;
+            if (!last || last.x !== x || last.y !== y) {
+                onCanvasPaint(x, y);
+                lastPaintCoord.current = { x, y };
+            }
+            return;
+        }
         if (!drag.current) return;
         const { index, startClientX, startClientY, handleType } = drag.current;
         const dx = Math.round((e.clientX - startClientX) / scale);
         const dy = Math.round((e.clientY - startClientY) / scale);
         onMove(index, dx, dy, drag.current.origItem, handleType);
-    }, [onMove, scale]);
+    }, [onMove, scale, drawMode, onCanvasPaint, clientToSvg]);
 
     const handleMouseUp = useCallback(() => {
+        if (isPainting.current) {
+            isPainting.current = false;
+            lastPaintCoord.current = null;
+        }
         if (drag.current) {
             onCommitMove();
             drag.current = null;
@@ -162,6 +191,11 @@ export default function Canvas({
             // so reaching here always means an empty-canvas click).
             const { x, y } = clientToSvg(e.clientX, e.clientY);
             onCanvasClick(x, y);
+        } else if (drawMode === 'drawPixel' && onCanvasClick) {
+            const { x, y } = clientToSvg(e.clientX, e.clientY);
+            onCanvasClick(x, y);
+            isPainting.current = true;
+            lastPaintCoord.current = { x, y };
         } else if (e.target === e.currentTarget) {
             onSelect(null);
         }
@@ -317,6 +351,21 @@ export default function Canvas({
                         strokeDasharray={isSelected ? `${6 / scale}` : undefined}
                         {...baseProps} />
                 );
+            case 'drawPixel':
+                // Render as a small cross-hair in the editor for visibility; the firmware
+                // draws a single display pixel at (x, y).
+                return (
+                    <rect key={index}
+                        x={item.x}
+                        y={item.y}
+                        width={1}
+                        height={1}
+                        fill={color}
+                        stroke={isSelected ? '#2563eb' : 'none'}
+                        strokeWidth={isSelected ? 2 / scale : 0}
+                        {...baseProps}
+                    />
+                );
             case 'loadG5Image': {
                 const maxC = (1 << Math.max(1, displayBpp)) - 1;
                 const fgNorm = (item.fg ?? maxC) / maxC;
@@ -365,7 +414,7 @@ export default function Canvas({
     const selSW  = Math.max(1.5 / scale, 1);
     const selDash = `${Math.max(5 / scale, 2)} ${Math.max(3 / scale, 2)}`;
 
-    const inDrawMode = drawMode === 'drawLine';
+    const inDrawMode = drawMode === 'drawLine' || drawMode === 'drawPixel';
 
     return (
         <>

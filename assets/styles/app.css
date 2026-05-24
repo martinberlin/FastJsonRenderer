@@ -581,3 +581,127 @@ body {
     font-size: 12px;
     color: var(--text-muted);
 }
+
+/* =========================================================
+   JSON footer – size badge
+   ========================================================= */
+.json-footer-size {
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+    letter-spacing: .02em;
+    transition: background .2s, color .2s;
+}
+.json-footer-size-warn {
+    background: #7c2d12;
+    color: #fdba74;
+    animation: pulse-warn 1.5s ease-in-out infinite;
+}
+@keyframes pulse-warn {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .7; }
+}
+
+/* =========================================================
+   BLE panel (inside json-footer)
+   ========================================================= */
+.ble-panel {
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.ble-panel-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.ble-label {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 140px;
+    white-space: nowrap;
+}
+.ble-input {
+    flex: 1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    color: #e2e8f0;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 11px;
+    padding: 4px 8px;
+    outline: none;
+    min-width: 260px;
+}
+.ble-input:focus { border-color: var(--primary); }
+.ble-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #1e293b;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 80px;
+}
+.ble-progress-fill {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 3px;
+    transition: width .15s;
+}
+.ble-status {
+    color: #94a3b8;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+.ble-hint {
+    color: #475569;
+    font-size: 10.5px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   Toolbar draw-colour picker
+   ========================================================= */
+.toolbar-draw-color {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 8px;
+    background: #eff6ff;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    margin: 2px 0;
+}
+.toolbar-draw-color-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.toolbar-draw-color-value {
+    color: var(--text);
+    font-weight: 700;
+}
+.toolbar-draw-color-range {
+    width: 100%;
+    accent-color: var(--primary);
+}
+.toolbar-draw-color-swatch {
+    display: block;
+    width: 100%;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+}

@@ -112,6 +112,23 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
                 </>
             )}
 
+            {/* Circle */}
+            {(item.type === 'fillCircle' || item.type === 'drawCircle') && (
+                <>
+                    <NumField label="X (center)" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
+                    <NumField label="Y (center)" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
+                    <NumField label="Radius" value={item.r} onChange={(v) => onChange({ r: Math.max(1, v) })} min={1} />
+                </>
+            )}
+
+            {/* Pixel */}
+            {item.type === 'drawPixel' && (
+                <>
+                    <NumField label="X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
+                    <NumField label="Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
+                </>
+            )}
+
             {/* G5 image */}
             {item.type === 'loadG5Image' && (
                 <>

@@ -67,11 +67,14 @@ ddev npm run watch
 
 - **Visual canvas** – 1:1 scale representation of the target display (default: ED052TC4 1280×780)
 - **Drag-and-drop** – click an element on the canvas and drag it to reposition
-- **Element types** – text (`drawString`), filled/outline rectangles, lines, filled/outline circles
+- **Element types** – text (`drawString`), filled/outline rectangles, lines, filled/outline circles, single pixels (`drawPixel`)
+- **Pixel-paint tool** – click or drag on the canvas to freehand-paint individual pixels; pick a grey-scale colour with the inline slider
 - **Fonts** – Ubuntu40, Ubuntu40b, Ubuntu30, Ubuntu20 and Monospace12
 - **Grayscale colour picker** – 0 (black) → 15 (white) for 4BPP displays
 - **Layer ordering** – move elements up/down in rendering order
 - **Live JSON footer** – click `{ } JSON` in the header to open a dark-themed footer panel spanning the full editor width; see the exact FastJsonDL payload update live as you design; drag the top edge to resize it; copy to clipboard in one click
+- **JSON byte counter** – live KB size badge in the JSON footer; turns amber with a ⚠ warning when the payload exceeds 50 KB (BLE threshold)
+- **BLE send** – one-click "🔵 BLE" button in the JSON footer; connects via Web Bluetooth (Chrome / Edge, HTTPS) and streams the JSON to your ESP32 in 512-byte chunks using the Nordic UART Service (configurable UUIDs)
 - **Export JSON** – download a `.json` file ready to POST to your ESP32
 - **Persistence** – screens saved to MariaDB via Doctrine ORM (Symfony 7)
 
@@ -161,8 +164,22 @@ The `/api/screens/{id}/export` endpoint returns a payload ready to be sent direc
 | `drawLine` | `x1`, `y1`, `x2`, `y2`, `c` |
 | `fillCircle` | `x`, `y`, `r`, `c` |
 | `drawCircle` | `x`, `y`, `r`, `c` |
+| `drawPixel` | `x`, `y`, `c` |
+| `loadG5Image` | `x`, `y`, `w`, `h`, `fg`, `bg`, `data` (array of 2-char bare hex strings e.g. `"bf"`) |
 
 `c` = grayscale colour value: `0` = black … `15` = white (4BPP) · `0`…`3` (2BPP) · `0`/`1` (1BPP)
+
+### drawPixel example
+
+```json
+{ "type": "drawPixel", "x": 30, "y": 70, "c": 0 }
+```
+
+Use the **✏ Draw Pixel** toolbar tool to paint individual pixels on the canvas.  Click once to place a single pixel, or hold and drag to paint freehand.  Select a grey-scale colour with the colour slider that appears while the tool is active.
+
+### G5 image hex format
+
+The `data` array uses bare 2-character lowercase hex strings (e.g. `"bf"`) rather than the older `"0xbf"` format.  Both formats are accepted by FastJsonDL firmware.  The compact form saves ~33 % of data bytes per entry, which matters when sending payloads over BLE.
 
 ---
 
@@ -174,7 +191,6 @@ The `/api/screens/{id}/export` endpoint returns a payload ready to be sent direc
 - Grid snapping
 - Custom display resolution
 - User accounts (multi-user)
-- Live preview push to device via MQTT
 
 ---
 
