@@ -8,8 +8,24 @@ const BLE_CHUNK_SIZE = 512;
 
 // Default NUS (Nordic UART Service) UUIDs used by the FastJsonDL firmware.
 // These can be overridden by the user in the BLE modal.
-const DEFAULT_SERVICE_UUID      = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const DEFAULT_DEVICE_NAME         = 'FastJsonDL';
+const DEFAULT_SERVICE_UUID        = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const DEFAULT_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+
+// Transfer protocol – 8-byte header prepended to every JSON payload.
+//   Byte 0-1 : type   uint16 little-endian  0x0001 = JSON payload
+//   Byte 2-7 : length uint48 little-endian  total JSON byte count
+const HEADER_TYPE_JSON = 0x0001;
+
+function buildHeader(jsonByteLength) {
+    const header = new Uint8Array(8);
+    const dv = new DataView(header.buffer);
+    dv.setUint16(0, HEADER_TYPE_JSON, /* littleEndian */ true);
+    // uint48 split into low 32 bits + high 16 bits
+    dv.setUint32(2, jsonByteLength >>> 0, true);
+    dv.setUint16(6, Math.floor(jsonByteLength / 0x100000000), true);
+    return header;
+}
 
 /**
  * JsonFooter – a collapsible, resizable footer panel that shows the live
@@ -26,6 +42,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
     const [showBle, setShowBle] = useState(false);
     const [bleStatus, setBleStatus] = useState(null);   // null | string
     const [bleProgress, setBleProgress] = useState(null); // null | { sent, total }
+    const [deviceName, setDeviceName] = useState(DEFAULT_DEVICE_NAME);
     const [serviceUuid, setServiceUuid] = useState(DEFAULT_SERVICE_UUID);
     const [charUuid, setCharUuid] = useState(DEFAULT_CHARACTERISTIC_UUID);
 
@@ -67,8 +84,18 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
         setBleStatus('🔍 Requesting BLE device…');
         setBleProgress(null);
         try {
+            // Build filters: service UUID filter (ideal) + name filter (fallback when
+            // the ESP32 primary advertisement overflows 31 bytes and the service UUID
+            // is silently dropped from it by the Bluedroid stack).
+            const filters = [{ services: [serviceUuid] }];
+            if (deviceName.trim()) {
+                filters.push({ name: deviceName.trim() });
+            }
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ services: [serviceUuid] }],
+                filters,
+                // optionalServices grants access to the service even when discovery
+                // happened via the name filter rather than the service UUID filter.
+                optionalServices: [serviceUuid],
             });
             setBleStatus(`🔗 Connecting to "${device.name ?? 'device'}"…`);
             const server = await device.gatt.connect();
@@ -76,7 +103,14 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
             const service = await server.getPrimaryService(serviceUuid);
             const characteristic = await service.getCharacteristic(charUuid);
 
-            const data = new TextEncoder().encode(json);
+            // Build payload: 8-byte header + raw JSON bytes
+            const jsonBytes = new TextEncoder().encode(json);
+            const jsonLen   = jsonBytes.length;
+            const header    = buildHeader(jsonLen);
+            const data      = new Uint8Array(8 + jsonLen);
+            data.set(header, 0);
+            data.set(jsonBytes, 8);
+
             const total = data.length;
             let sent = 0;
             setBleStatus('📤 Sending…');
@@ -86,7 +120,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                 sent += chunk.length;
                 setBleProgress({ sent, total });
             }
-            setBleStatus(`✅ Sent ${total} bytes successfully.`);
+            setBleStatus(`✅ Sent ${total} bytes (8-byte header + ${jsonLen} JSON).`);
             setBleProgress(null);
         } catch (err) {
             if (err.name === 'NotFoundError') {
@@ -96,7 +130,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
             }
             setBleProgress(null);
         }
-    }, [json, serviceUuid, charUuid]);
+    }, [json, deviceName, serviceUuid, charUuid]);
 
     return (
         <div className="json-footer" style={{ height }}>
@@ -151,6 +185,15 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
             {showBle && (
                 <div className="ble-panel">
                     <div className="ble-panel-row">
+                        <label className="ble-label">Device Name</label>
+                        <input
+                            className="ble-input"
+                            value={deviceName}
+                            onChange={(e) => setDeviceName(e.target.value)}
+                            spellCheck={false}
+                        />
+                    </div>
+                    <div className="ble-panel-row">
                         <label className="ble-label">Service UUID</label>
                         <input
                             className="ble-input"
@@ -189,10 +232,11 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                         )}
                     </div>
                     <p className="ble-hint">
-                        Requires Chrome / Edge on HTTPS (or localhost / 127.0.0.1). The UUIDs above match the default Nordic
-                        UART Service used by FastJsonDL firmware — change them if your firmware uses custom UUIDs.
-                        Chunk size assumes extended MTU (512 B); lower <code>BLE_CHUNK_SIZE</code> in the source if your
-                        device uses a smaller MTU.
+                        Requires Chrome / Edge on HTTPS (or localhost / 127.0.0.1). Discovery uses both the
+                        service UUID filter and the device name filter — name matching is a reliable fallback when
+                        the ESP32 advertisement packet overflows 31 bytes and the service UUID is dropped from it.
+                        Each transfer is preceded by an 8-byte header (type <code>0x0001</code> + uint48 length,
+                        both little-endian) as required by the FastJsonDL firmware.
                     </p>
                 </div>
             )}
