@@ -1,31 +1,5 @@
 import React, { useCallback, useState } from 'react';
-
-// BLE_CHUNK_SIZE: maximum bytes per BLE write-without-response operation.
-// Modern BLE stacks negotiate extended MTU (up to 512 bytes) after connection;
-// 512 is used here as a safe upper bound.  If your firmware uses a smaller MTU,
-// lower this value accordingly.
-const BLE_CHUNK_SIZE = 512;
-
-// Default NUS (Nordic UART Service) UUIDs used by the FastJsonDL firmware.
-// These can be overridden by the user in the BLE modal.
-const DEFAULT_DEVICE_NAME         = 'FastJsonDL';
-const DEFAULT_SERVICE_UUID        = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const DEFAULT_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
-
-// Transfer protocol – 8-byte header prepended to every JSON payload.
-//   Byte 0-1 : type   uint16 little-endian  0x0001 = JSON payload
-//   Byte 2-7 : length uint48 little-endian  total JSON byte count
-const HEADER_TYPE_JSON = 0x0001;
-
-function buildHeader(jsonByteLength) {
-    const header = new Uint8Array(8);
-    const dv = new DataView(header.buffer);
-    dv.setUint16(0, HEADER_TYPE_JSON, /* littleEndian */ true);
-    // uint48 split into low 32 bits + high 16 bits
-    dv.setUint32(2, jsonByteLength >>> 0, true);
-    dv.setUint16(6, Math.floor(jsonByteLength / 0x100000000), true);
-    return header;
-}
+import { BLE_DEFAULTS, bleSendJson } from '../utils/bleSend';
 
 /**
  * JsonFooter – a collapsible, resizable footer panel that shows the live
@@ -42,9 +16,9 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
     const [showBle, setShowBle] = useState(false);
     const [bleStatus, setBleStatus] = useState(null);   // null | string
     const [bleProgress, setBleProgress] = useState(null); // null | { sent, total }
-    const [deviceName, setDeviceName] = useState(DEFAULT_DEVICE_NAME);
-    const [serviceUuid, setServiceUuid] = useState(DEFAULT_SERVICE_UUID);
-    const [charUuid, setCharUuid] = useState(DEFAULT_CHARACTERISTIC_UUID);
+    const [deviceName, setDeviceName] = useState(BLE_DEFAULTS.deviceName);
+    const [serviceUuid, setServiceUuid] = useState(BLE_DEFAULTS.serviceUuid);
+    const [charUuid, setCharUuid] = useState(BLE_DEFAULTS.charUuid);
 
     if (!screen) return null;
 
@@ -76,60 +50,8 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
     };
 
     // ── BLE send ──────────────────────────────────────────────────────────
-    const handleBleSend = useCallback(async () => {
-        if (!navigator.bluetooth) {
-            setBleStatus('❌ Web Bluetooth is not available. Use Chrome/Edge on HTTPS or localhost / 127.0.0.1.');
-            return;
-        }
-        setBleStatus('🔍 Requesting BLE device…');
-        setBleProgress(null);
-        try {
-            // Build filters: service UUID filter (ideal) + name filter (fallback when
-            // the ESP32 primary advertisement overflows 31 bytes and the service UUID
-            // is silently dropped from it by the Bluedroid stack).
-            const filters = [{ services: [serviceUuid] }];
-            if (deviceName.trim()) {
-                filters.push({ name: deviceName.trim() });
-            }
-            const device = await navigator.bluetooth.requestDevice({
-                filters,
-                // optionalServices grants access to the service even when discovery
-                // happened via the name filter rather than the service UUID filter.
-                optionalServices: [serviceUuid],
-            });
-            setBleStatus(`🔗 Connecting to "${device.name ?? 'device'}"…`);
-            const server = await device.gatt.connect();
-            setBleStatus('📡 Accessing service…');
-            const service = await server.getPrimaryService(serviceUuid);
-            const characteristic = await service.getCharacteristic(charUuid);
-
-            // Build payload: 8-byte header + raw JSON bytes
-            const jsonBytes = new TextEncoder().encode(json);
-            const jsonLen   = jsonBytes.length;
-            const header    = buildHeader(jsonLen);
-            const data      = new Uint8Array(8 + jsonLen);
-            data.set(header, 0);
-            data.set(jsonBytes, 8);
-
-            const total = data.length;
-            let sent = 0;
-            setBleStatus('📤 Sending…');
-            while (sent < total) {
-                const chunk = data.slice(sent, sent + BLE_CHUNK_SIZE);
-                await characteristic.writeValueWithoutResponse(chunk);
-                sent += chunk.length;
-                setBleProgress({ sent, total });
-            }
-            setBleStatus(`✅ Sent ${total} bytes (8-byte header + ${jsonLen} JSON).`);
-            setBleProgress(null);
-        } catch (err) {
-            if (err.name === 'NotFoundError') {
-                setBleStatus('ℹ️ No device selected.');
-            } else {
-                setBleStatus(`❌ BLE error: ${err.message}`);
-            }
-            setBleProgress(null);
-        }
+    const handleBleSend = useCallback(() => {
+        bleSendJson(json, { deviceName, serviceUuid, charUuid, onStatus: setBleStatus, onProgress: setBleProgress });
     }, [json, deviceName, serviceUuid, charUuid]);
 
     return (

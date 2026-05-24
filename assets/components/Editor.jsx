@@ -4,6 +4,7 @@ import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import JsonFooter from './JsonFooter';
 import ImageImporter from './ImageImporter';
+import { BLE_DEFAULTS, bleSendJson } from '../utils/bleSend';
 
 const SCALE_OPTIONS = [0.25, 0.33, 0.5, 0.67, 0.75, 1.0];
 const JSON_FOOTER_DEFAULT_H = 220;
@@ -64,6 +65,11 @@ export default function Editor({ screenId, onBack }) {
 
     // Image importer modal
     const [showImporter, setShowImporter] = useState(false);
+
+    // Quick BLE send (header button)
+    const [bleQuickStatus, setBleQuickStatus] = useState(null);   // null | string
+    const [bleQuickProgress, setBleQuickProgress] = useState(null); // null | { sent, total }
+    const bleStatusTimerRef = useRef(null);
 
     // Ref used during footer drag-to-resize
     const footerDragRef = useRef(null);
@@ -320,6 +326,20 @@ export default function Editor({ screenId, onBack }) {
     const displayHeight = screen?.displayHeight ?? 780;
     const displayBpp = screen?.displayBpp ?? 4;
 
+    // ── Quick BLE send ─────────────────────────────────────────────────────
+    const bleJson = JSON.stringify({ display_bpp: displayBpp, clear: true, items });
+    const handleBleQuickSend = () => {
+        // Auto-clear status after 5 s so the header doesn't stay cluttered
+        clearTimeout(bleStatusTimerRef.current);
+        const onStatus = (msg) => {
+            setBleQuickStatus(msg);
+            if (msg.startsWith('✅') || msg.startsWith('ℹ️') || msg.startsWith('❌')) {
+                bleStatusTimerRef.current = setTimeout(() => setBleQuickStatus(null), 5000);
+            }
+        };
+        bleSendJson(bleJson, { ...BLE_DEFAULTS, onStatus, onProgress: setBleQuickProgress });
+    };
+
     return (
         <div className="editor-layout">
             {/* ── Top bar ─────────────────────────────────────────────── */}
@@ -346,6 +366,21 @@ export default function Editor({ screenId, onBack }) {
                             ))}
                         </select>
                     </label>
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={handleBleQuickSend}
+                        disabled={!!bleQuickProgress}
+                        title="Send JSON to ESP32 via BLE (uses default FastJsonDL UUIDs — open JSON panel to customise)"
+                    >
+                        {bleQuickProgress
+                            ? `📤 ${Math.round((bleQuickProgress.sent / bleQuickProgress.total) * 100)}%`
+                            : '🔵 BLE Send'}
+                    </button>
+                    {bleQuickStatus && (
+                        <span className="editor-ble-status" title={bleQuickStatus}>
+                            {bleQuickStatus}
+                        </span>
+                    )}
                     <button className={`btn btn-secondary btn-sm${showJson ? ' btn-active' : ''}`} onClick={() => setShowJson((v) => !v)}>
                         {'{ }'} JSON
                     </button>
