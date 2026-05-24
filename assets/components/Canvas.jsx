@@ -251,7 +251,7 @@ export default function Canvas({
                 </g>
             );
         }
-        if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'loadG5Image') {
+        if (item.type === 'fillRect' || item.type === 'drawRect') {
             const { x, y, w, h } = item;
             return (
                 <g key={`handles-${index}`}>

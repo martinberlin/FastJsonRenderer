@@ -174,7 +174,7 @@ export default function Editor({ screenId, onBack }) {
                     } else if (handleType === 'p2') {
                         next[index] = { ...item, x2: item.x2 + dx, y2: item.y2 + dy };
                     }
-                } else if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'loadG5Image') {
+                } else if (item.type === 'fillRect' || item.type === 'drawRect') {
                     next[index] = applyRectHandle(item, handleType, dx, dy);
                 } else if (item.type === 'fillCircle' || item.type === 'drawCircle') {
                     if (handleType === 'r') {
