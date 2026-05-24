@@ -132,7 +132,10 @@ export default function Toolbar({ onAdd, onStartDraw, onSelectMode, onImportImag
             <button
                 className="toolbar-btn toolbar-btn-image"
                 title={currentUser ? 'Import PNG/SVG image and convert to 1-bit G5 icon' : 'Sign in to use image import'}
-                onClick={currentUser ? onImportImage : () => { window.location.href = '/login'; }}
+                onClick={currentUser ? onImportImage : () => {
+                    // /login is a server-rendered page outside the React SPA; full navigation is intentional.
+                    window.location.href = '/login';
+                }}
                 style={currentUser ? {} : { opacity: 0.5 }}
             >
                 <span className="toolbar-icon">🖼</span>

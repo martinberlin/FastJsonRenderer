@@ -24,24 +24,38 @@ class UserRepository extends ServiceEntityRepository
             return $user;
         }
 
-        // Try to find by email (user may have registered through another provider)
-        $user = $this->findOneBy(['email' => $email]);
-        if ($user) {
+        // Wrap find-or-create in a transaction to prevent race conditions
+        $em = $this->getEntityManager();
+
+        return $em->wrapInTransaction(function () use ($githubId, $email, $firstName, $em): User {
+            // Re-check inside the transaction
+            $user = $this->findOneBy(['githubId' => $githubId]);
+            if ($user) {
+                return $user;
+            }
+
+            // Try to find by email, but only if it's not a synthesised private-email address
+            // (those encode the githubId and won't match any real email from another provider).
+            if (!str_ends_with($email, '@github-private.users.noreply.github.com')) {
+                $user = $this->findOneBy(['email' => $email]);
+                if ($user) {
+                    $user->setGithubId($githubId);
+                    $em->flush();
+
+                    return $user;
+                }
+            }
+
+            // Create a new user
+            $user = new User();
             $user->setGithubId($githubId);
-            $this->getEntityManager()->flush();
+            $user->setEmail($email);
+            $user->setFirstName($firstName);
+
+            $em->persist($user);
+            $em->flush();
 
             return $user;
-        }
-
-        // Create a new user
-        $user = new User();
-        $user->setGithubId($githubId);
-        $user->setEmail($email);
-        $user->setFirstName($firstName);
-
-        $this->getEntityManager()->persist($user);
-        $this->getEntityManager()->flush();
-
-        return $user;
+        });
     }
 }

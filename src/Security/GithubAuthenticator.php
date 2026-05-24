@@ -41,7 +41,9 @@ class GithubAuthenticator extends OAuth2Authenticator
                 $githubUser = $client->fetchUserFromToken($accessToken);
 
                 $githubId = (string) $githubUser->getId();
-                $email = $githubUser->getEmail() ?? ($githubUser->getNickname() . '@github.noemail');
+                // GitHub users who make their email private get a synthesised address.
+                // The pattern includes the unique githubId so it never collides across accounts.
+                $email = $githubUser->getEmail() ?? ($githubId . '@github-private.users.noreply.github.com');
                 $firstName = $githubUser->getName() ?? $githubUser->getNickname() ?? 'GitHub User';
 
                 return $this->userRepository->findOrCreateByGithub($githubId, $email, $firstName);
