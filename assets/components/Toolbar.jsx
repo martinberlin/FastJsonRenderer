@@ -39,17 +39,34 @@ const ADD_TOOLS = [
  * Props:
  *  - onAdd(defaults)          Add a new item with default properties.
  *  - onStartDraw(mode)        Enter a draw mode (e.g. 'drawLine'). Toggle off if same.
+ *  - onSelectMode()           Return to select/move mode (cancel any draw mode).
  *  - onImportImage()          Open the image importer modal.
  *  - drawMode                 Current draw mode (null | 'drawLine' | 'drawPixel').
  *  - drawColor                Current draw color (0–max) used in drawPixel mode.
  *  - drawColorMax             Maximum colour value for the current display BPP.
  *  - onDrawColorChange(c)     Called when the draw colour changes.
  */
-export default function Toolbar({ onAdd, onStartDraw, onImportImage, drawMode, drawColor, drawColorMax, onDrawColorChange }) {
+export default function Toolbar({ onAdd, onStartDraw, onSelectMode, onImportImage, drawMode, drawColor, drawColorMax, onDrawColorChange }) {
     const maxColor = drawColorMax ?? 15;
 
     return (
         <div className="toolbar">
+            {/* Select / move tool – default mode, active when no draw mode is set */}
+            <button
+                className={`toolbar-btn${drawMode === null ? ' toolbar-btn-active' : ''}`}
+                title="Select & move items"
+                onClick={onSelectMode}
+            >
+                <span className="toolbar-icon">
+                    <svg viewBox="0 0 14 18" width="14" height="18" fill="currentColor" aria-hidden="true">
+                        <path d="M0 0 L0 14 L4 10 L7 16.5 L9 15.5 L6 9 L11 9 Z" />
+                    </svg>
+                </span>
+                <span className="toolbar-label">Select</span>
+            </button>
+
+            <div className="toolbar-divider" />
+
             <div className="toolbar-title">Add Element</div>
 
             {/* Line tool – uses two-point click-to-draw mode */}

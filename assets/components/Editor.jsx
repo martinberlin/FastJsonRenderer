@@ -203,6 +203,12 @@ export default function Editor({ screenId, onBack }) {
         });
     }, []);
 
+    // ------------ select mode (cancel any draw mode) ----------------------
+    const handleSelectMode = useCallback(() => {
+        setDrawMode(null);
+        setLineFirstPoint(null);
+    }, []);
+
     // ------------ line two-point drawing ---------------------------------
     const handleStartDraw = useCallback((mode) => {
         setDrawMode((prev) => {
@@ -360,6 +366,7 @@ export default function Editor({ screenId, onBack }) {
                 <Toolbar
                     onAdd={handleAdd}
                     onStartDraw={handleStartDraw}
+                    onSelectMode={handleSelectMode}
                     onImportImage={() => setShowImporter(true)}
                     drawMode={drawMode}
                     drawColor={drawColor}
