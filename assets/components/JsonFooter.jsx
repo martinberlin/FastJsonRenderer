@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 
 // BLE_CHUNK_SIZE: maximum bytes per BLE write-without-response operation.
-// Most modern BLE stacks negotiate an MTU of ~512 bytes, but 512 is a safe default
-// that keeps each packet within a single connection interval.
+// Modern BLE stacks negotiate extended MTU (up to 512 bytes) after connection;
+// 512 is used here as a safe upper bound.  If your firmware uses a smaller MTU,
+// lower this value accordingly.
 const BLE_CHUNK_SIZE = 512;
 
 // Default NUS (Nordic UART Service) UUIDs used by the FastJsonDL firmware.
@@ -60,7 +61,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
     // ── BLE send ──────────────────────────────────────────────────────────
     const handleBleSend = useCallback(async () => {
         if (!navigator.bluetooth) {
-            setBleStatus('❌ Web Bluetooth is not available. Use Chrome/Edge on HTTPS or localhost.');
+            setBleStatus('❌ Web Bluetooth is not available. Use Chrome/Edge on HTTPS or localhost / 127.0.0.1.');
             return;
         }
         setBleStatus('🔍 Requesting BLE device…');
@@ -188,8 +189,10 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                         )}
                     </div>
                     <p className="ble-hint">
-                        Requires Chrome / Edge on HTTPS (or localhost). The UUIDs above match the default Nordic
+                        Requires Chrome / Edge on HTTPS (or localhost / 127.0.0.1). The UUIDs above match the default Nordic
                         UART Service used by FastJsonDL firmware — change them if your firmware uses custom UUIDs.
+                        Chunk size assumes extended MTU (512 B); lower <code>BLE_CHUNK_SIZE</code> in the source if your
+                        device uses a smaller MTU.
                     </p>
                 </div>
             )}

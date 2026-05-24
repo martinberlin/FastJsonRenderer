@@ -88,9 +88,10 @@ export default function Toolbar({ onAdd, onStartDraw, onImportImage, drawMode, d
                     />
                     <span
                         className="toolbar-draw-color-swatch"
-                        style={{
-                            background: `rgb(${Math.round(((drawColor ?? 0) / maxColor) * 255)},${Math.round(((drawColor ?? 0) / maxColor) * 255)},${Math.round(((drawColor ?? 0) / maxColor) * 255)})`,
-                        }}
+                        style={(() => {
+                            const grey = Math.round(((drawColor ?? 0) / maxColor) * 255);
+                            return { background: `rgb(${grey},${grey},${grey})` };
+                        })()}
                     />
                 </div>
             )}
