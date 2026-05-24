@@ -278,8 +278,12 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128, inver
 
 /**
  * Convert a Uint8Array of G5 bytes to the firmware-compatible hex-string array.
- * Each byte becomes a "0x"-prefixed 2-char lowercase hex string.
- * Example: [0xbf, 0x00] → ["0xbf","0x00"]
+ * Each byte becomes a bare 2-char lowercase hex string (no "0x" prefix).
+ * Example: [0xbf, 0x00] → ["bf","00"]
+ *
+ * The compact format (2 chars vs 4 chars with "0x") reduces JSON payload size,
+ * which is important for BLE transmission.  FastJsonDL firmware accepts both
+ * "0xbf" and bare "bf" when parsing the data array.
  *
  * @param {Uint8Array} data
  * @returns {string[]}
@@ -287,8 +291,7 @@ export function imageToG5(img, targetWidth, targetHeight, threshold = 128, inver
 export function g5ToHexArray(data) {
     const out = new Array(data.length);
     for (let i = 0; i < data.length; i++) {
-        // "0x" prefix is required for FastJsonDL firmware to parse hex byte values correctly
-        out[i] = '0x' + data[i].toString(16).padStart(2, '0');
+        out[i] = data[i].toString(16).padStart(2, '0');
     }
     return out;
 }

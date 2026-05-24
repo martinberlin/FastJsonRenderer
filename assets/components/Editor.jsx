@@ -4,6 +4,7 @@ import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import JsonFooter from './JsonFooter';
 import ImageImporter from './ImageImporter';
+import { BLE_DEFAULTS, bleSendJson } from '../utils/bleSend';
 
 const SCALE_OPTIONS = [0.25, 0.33, 0.5, 0.67, 0.75, 1.0];
 const JSON_FOOTER_DEFAULT_H = 220;
@@ -56,11 +57,19 @@ export default function Editor({ screenId, onBack }) {
     const [items, setItems] = useState([]);
 
     // Line-draw mode state
-    const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine'
+    const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine' | 'drawPixel'
     const [lineFirstPoint, setLineFirstPoint] = useState(null); // null | { x, y }
+
+    // Draw color for pixel-paint mode (0 = black)
+    const [drawColor, setDrawColor] = useState(0);
 
     // Image importer modal
     const [showImporter, setShowImporter] = useState(false);
+
+    // Quick BLE send (header button)
+    const [bleQuickStatus, setBleQuickStatus] = useState(null);   // null | string
+    const [bleQuickProgress, setBleQuickProgress] = useState(null); // null | { sent, total }
+    const bleStatusTimerRef = useRef(null);
 
     // Ref used during footer drag-to-resize
     const footerDragRef = useRef(null);
@@ -171,7 +180,7 @@ export default function Editor({ screenId, onBack }) {
                     } else if (handleType === 'p2') {
                         next[index] = { ...item, x2: item.x2 + dx, y2: item.y2 + dy };
                     }
-                } else if (item.type === 'fillRect' || item.type === 'drawRect' || item.type === 'loadG5Image') {
+                } else if (item.type === 'fillRect' || item.type === 'drawRect') {
                     next[index] = applyRectHandle(item, handleType, dx, dy);
                 } else if (item.type === 'fillCircle' || item.type === 'drawCircle') {
                     if (handleType === 'r') {
@@ -200,6 +209,12 @@ export default function Editor({ screenId, onBack }) {
         });
     }, []);
 
+    // ------------ select mode (cancel any draw mode) ----------------------
+    const handleSelectMode = useCallback(() => {
+        setDrawMode(null);
+        setLineFirstPoint(null);
+    }, []);
+
     // ------------ line two-point drawing ---------------------------------
     const handleStartDraw = useCallback((mode) => {
         setDrawMode((prev) => {
@@ -220,10 +235,21 @@ export default function Editor({ screenId, onBack }) {
                 setDrawMode(null);
                 setLineFirstPoint(null);
             }
+        } else if (drawMode === 'drawPixel') {
+            // Place pixel at the exact canvas coordinate (no auto-offset)
+            setItems((prev) => [...prev, { type: 'p', x, y, c: drawColor }]);
         } else {
             setSelectedIndex(null);
         }
-    }, [drawMode, lineFirstPoint, handleAdd]);
+    }, [drawMode, lineFirstPoint, handleAdd, drawColor]);
+
+    // ------------ pixel paint drag ----------------------------------------
+    // Called continuously during a mouse-drag in drawPixel mode
+    const handleCanvasPaint = useCallback((x, y) => {
+        if (drawMode === 'drawPixel') {
+            setItems((prev) => [...prev, { type: 'p', x, y, c: drawColor }]);
+        }
+    }, [drawMode, drawColor]);
 
     // ------------ property edit ------------------------------------------
     const handlePropChange = useCallback((patch) => {
@@ -300,6 +326,20 @@ export default function Editor({ screenId, onBack }) {
     const displayHeight = screen?.displayHeight ?? 780;
     const displayBpp = screen?.displayBpp ?? 4;
 
+    // ── Quick BLE send ─────────────────────────────────────────────────────
+    const bleJson = JSON.stringify({ display_bpp: displayBpp, clear: true, items });
+    const handleBleQuickSend = () => {
+        // Auto-clear status after 5 s so the header doesn't stay cluttered
+        clearTimeout(bleStatusTimerRef.current);
+        const onStatus = (msg) => {
+            setBleQuickStatus(msg);
+            if (msg.startsWith('✅') || msg.startsWith('ℹ️') || msg.startsWith('❌')) {
+                bleStatusTimerRef.current = setTimeout(() => setBleQuickStatus(null), 5000);
+            }
+        };
+        bleSendJson(bleJson, { ...BLE_DEFAULTS, onStatus, onProgress: setBleQuickProgress });
+    };
+
     return (
         <div className="editor-layout">
             {/* ── Top bar ─────────────────────────────────────────────── */}
@@ -326,6 +366,21 @@ export default function Editor({ screenId, onBack }) {
                             ))}
                         </select>
                     </label>
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={handleBleQuickSend}
+                        disabled={!!bleQuickProgress}
+                        title="Send JSON to ESP32 via BLE (uses default FastJsonDL UUIDs — open JSON panel to customise)"
+                    >
+                        {bleQuickProgress
+                            ? `📤 ${Math.round((bleQuickProgress.sent / bleQuickProgress.total) * 100)}%`
+                            : '🔵 BLE Send'}
+                    </button>
+                    {bleQuickStatus && (
+                        <span className="editor-ble-status" title={bleQuickStatus}>
+                            {bleQuickStatus}
+                        </span>
+                    )}
                     <button className={`btn btn-secondary btn-sm${showJson ? ' btn-active' : ''}`} onClick={() => setShowJson((v) => !v)}>
                         {'{ }'} JSON
                     </button>
@@ -346,8 +401,12 @@ export default function Editor({ screenId, onBack }) {
                 <Toolbar
                     onAdd={handleAdd}
                     onStartDraw={handleStartDraw}
+                    onSelectMode={handleSelectMode}
                     onImportImage={() => setShowImporter(true)}
                     drawMode={drawMode}
+                    drawColor={drawColor}
+                    drawColorMax={(1 << displayBpp) - 1}
+                    onDrawColorChange={setDrawColor}
                 />
 
                 {/* Centre: scrollable canvas */}
@@ -373,6 +432,7 @@ export default function Editor({ screenId, onBack }) {
                             drawMode={drawMode}
                             lineFirstPoint={lineFirstPoint}
                             onCanvasClick={handleCanvasClick}
+                            onCanvasPaint={handleCanvasPaint}
                         />
                     </div>
                 </div>
