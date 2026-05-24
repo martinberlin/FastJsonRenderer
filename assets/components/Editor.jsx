@@ -225,7 +225,7 @@ export default function Editor({ screenId, onBack }) {
             }
         } else if (drawMode === 'drawPixel') {
             // Place pixel at the exact canvas coordinate (no auto-offset)
-            setItems((prev) => [...prev, { type: 'drawPixel', x, y, c: drawColor }]);
+            setItems((prev) => [...prev, { type: 'p', x, y, c: drawColor }]);
         } else {
             setSelectedIndex(null);
         }
@@ -235,7 +235,7 @@ export default function Editor({ screenId, onBack }) {
     // Called continuously during a mouse-drag in drawPixel mode
     const handleCanvasPaint = useCallback((x, y) => {
         if (drawMode === 'drawPixel') {
-            setItems((prev) => [...prev, { type: 'drawPixel', x, y, c: drawColor }]);
+            setItems((prev) => [...prev, { type: 'p', x, y, c: drawColor }]);
         }
     }, [drawMode, drawColor]);
 

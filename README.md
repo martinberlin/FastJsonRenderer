@@ -67,7 +67,7 @@ ddev npm run watch
 
 - **Visual canvas** – 1:1 scale representation of the target display (default: ED052TC4 1280×780)
 - **Drag-and-drop** – click an element on the canvas and drag it to reposition
-- **Element types** – text (`drawString`), filled/outline rectangles, lines, filled/outline circles, single pixels (`drawPixel`)
+- **Element types** – text (`drawString`), filled/outline rectangles, lines, filled/outline circles, single pixels (`p`)
 - **Pixel-paint tool** – click or drag on the canvas to freehand-paint individual pixels; pick a grey-scale colour with the inline slider
 - **Fonts** – Ubuntu40, Ubuntu40b, Ubuntu30, Ubuntu20 and Monospace12
 - **Grayscale colour picker** – 0 (black) → 15 (white) for 4BPP displays
@@ -164,7 +164,7 @@ The `/api/screens/{id}/export` endpoint returns a payload ready to be sent direc
 | `drawLine` | `x1`, `y1`, `x2`, `y2`, `c` |
 | `fillCircle` | `x`, `y`, `r`, `c` |
 | `drawCircle` | `x`, `y`, `r`, `c` |
-| `drawPixel` | `x`, `y`, `c` |
+| `p` | `x`, `y`, `c` |
 | `loadG5Image` | `x`, `y`, `w`, `h`, `fg`, `bg`, `data` (array of 2-char bare hex strings e.g. `"bf"`) |
 
 `c` = grayscale colour value: `0` = black … `15` = white (4BPP) · `0`…`3` (2BPP) · `0`/`1` (1BPP)
@@ -172,7 +172,7 @@ The `/api/screens/{id}/export` endpoint returns a payload ready to be sent direc
 ### drawPixel example
 
 ```json
-{ "type": "drawPixel", "x": 30, "y": 70, "c": 0 }
+{ "type": "p", "x": 30, "y": 70, "c": 0 }
 ```
 
 Use the **✏ Draw Pixel** toolbar tool to paint individual pixels on the canvas.  Click once to place a single pixel, or hold and drag to paint freehand.  Select a grey-scale colour with the colour slider that appears while the tool is active.

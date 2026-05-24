@@ -44,7 +44,7 @@ const getItemBounds = (item) => {
             return { x: item.x - item.r, y: item.y - item.r, w: item.r * 2, h: item.r * 2 };
         case 'loadG5Image':
             return { x: item.x, y: item.y, w: item.w, h: item.h };
-        case 'drawPixel':
+        case 'p':
             return { x: item.x, y: item.y, w: 1, h: 1 };
         default:
             return null;
@@ -351,9 +351,8 @@ export default function Canvas({
                         strokeDasharray={isSelected ? `${6 / scale}` : undefined}
                         {...baseProps} />
                 );
-            case 'drawPixel':
-                // Render as a small cross-hair in the editor for visibility; the firmware
-                // draws a single display pixel at (x, y).
+            case 'p':
+                // Render as a 1×1 rect in the editor; the firmware draws a single display pixel at (x, y).
                 return (
                     <rect key={index}
                         x={item.x}

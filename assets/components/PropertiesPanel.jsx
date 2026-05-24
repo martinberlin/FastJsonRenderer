@@ -122,7 +122,7 @@ export default function PropertiesPanel({ item, displayBpp, onChange, onDelete, 
             )}
 
             {/* Pixel */}
-            {item.type === 'drawPixel' && (
+            {item.type === 'p' && (
                 <>
                     <NumField label="X" value={item.x} onChange={(v) => onChange({ x: v })} min={0} />
                     <NumField label="Y" value={item.y} onChange={(v) => onChange({ y: v })} min={0} />
