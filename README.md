@@ -4,6 +4,9 @@ A web-based ePaper screen designer for [FastJsonDL](https://github.com/martinber
 
 Design screens visually in the browser, then export the resulting **FastJsonDL JSON** payload to be rendered on an ESP32-C5 (or similar) using the [FastEPD](https://github.com/bitbank2/FastEPD) library.
 
+To try it online without any installation please go to [draw.fasani.de](https://draw.fasani.de) and be aware that to save or to use the import PNG/SVG feature into G5 image you need to login with your Github account.
+
+
 ---
 
 ## 🚀 Getting started (DDEV + Docker)
