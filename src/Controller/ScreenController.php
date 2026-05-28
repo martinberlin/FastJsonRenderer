@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Screen;
+use App\Entity\User;
 use App\Repository\ScreenRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,12 +22,18 @@ class ScreenController extends AbstractController
     }
 
     /**
-     * List all screens (summary only).
+     * List screens. Logged-in users see only their own; guests see none.
      */
     #[Route('', name: 'list', methods: ['GET'])]
     public function list(): JsonResponse
     {
-        $screens = $this->screenRepository->findBy([], ['updatedAt' => 'DESC']);
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([]);
+        }
+
+        $screens = $this->screenRepository->findBy(['user' => $user], ['updatedAt' => 'DESC']);
 
         $data = array_map(fn(Screen $s) => [
             'id' => $s->getId(),
@@ -44,17 +51,24 @@ class ScreenController extends AbstractController
     }
 
     /**
-     * Create a new screen.
+     * Create a new screen (requires login).
      */
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Authentication required to save screens'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $payload = json_decode($request->getContent(), true);
         if (!is_array($payload)) {
             return $this->json(['error' => 'Invalid JSON body'], Response::HTTP_BAD_REQUEST);
         }
 
         $screen = new Screen();
+        $screen->setUser($user);
         $this->hydrateScreen($screen, $payload);
 
         $this->em->persist($screen);
@@ -64,7 +78,7 @@ class ScreenController extends AbstractController
     }
 
     /**
-     * Get a single screen with all items.
+     * Get a single screen with all items (owner only).
      */
     #[Route('/{id}', name: 'get', methods: ['GET'])]
     public function get(int $id): JsonResponse
@@ -74,18 +88,34 @@ class ScreenController extends AbstractController
             return $this->json(['error' => 'Screen not found'], Response::HTTP_NOT_FOUND);
         }
 
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if ($screen->getUser() !== null && $screen->getUser() !== $user) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+        }
+
         return $this->json($this->serializeScreen($screen));
     }
 
     /**
-     * Update an existing screen.
+     * Update an existing screen (owner only).
      */
     #[Route('/{id}', name: 'update', methods: ['PUT', 'PATCH'])]
     public function update(int $id, Request $request): JsonResponse
     {
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Authentication required to save screens'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $screen = $this->screenRepository->find($id);
         if (!$screen) {
             return $this->json(['error' => 'Screen not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($screen->getUser() !== null && $screen->getUser() !== $user) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
         $payload = json_decode($request->getContent(), true);
@@ -100,14 +130,24 @@ class ScreenController extends AbstractController
     }
 
     /**
-     * Delete a screen.
+     * Delete a screen (owner only).
      */
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['error' => 'Authentication required'], Response::HTTP_UNAUTHORIZED);
+        }
+
         $screen = $this->screenRepository->find($id);
         if (!$screen) {
             return $this->json(['error' => 'Screen not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($screen->getUser() !== null && $screen->getUser() !== $user) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
         $this->em->remove($screen);
@@ -117,7 +157,7 @@ class ScreenController extends AbstractController
     }
 
     /**
-     * Export screen as FastJsonDL-compatible JSON.
+     * Export screen as FastJsonDL-compatible JSON (owner only).
      */
     #[Route('/{id}/export', name: 'export', methods: ['GET'])]
     public function export(int $id): JsonResponse
@@ -125,6 +165,12 @@ class ScreenController extends AbstractController
         $screen = $this->screenRepository->find($id);
         if (!$screen) {
             return $this->json(['error' => 'Screen not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if ($screen->getUser() !== null && $screen->getUser() !== $user) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
         return $this->json($screen->toFastJsonDL(), headers: [

@@ -41,6 +41,10 @@ class Screen
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'screens')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $user = null;
+
     #[ORM\PrePersist]
     public function onPrePersist(): void
     {
@@ -145,6 +149,18 @@ class Screen
     public function getUpdatedAt(): ?\DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
     }
 
     /**
