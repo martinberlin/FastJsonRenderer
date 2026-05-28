@@ -31,6 +31,9 @@ class Screen
     #[ORM\Column]
     private int $displayBpp = 4;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $rotation = 0;
+
     /** @var array<int, array<string, mixed>> */
     #[ORM\Column(type: Types::JSON)]
     private array $items = [];
@@ -123,6 +126,18 @@ class Screen
         return $this;
     }
 
+    public function getRotation(): int
+    {
+        return $this->rotation;
+    }
+
+    public function setRotation(int $rotation): static
+    {
+        $this->rotation = $rotation;
+
+        return $this;
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -182,6 +197,7 @@ class Screen
 
         return [
             'display_bpp' => $this->displayBpp,
+            'rotation'    => $this->rotation,
             'clear' => true,
             'items' => $exportItems,
         ];

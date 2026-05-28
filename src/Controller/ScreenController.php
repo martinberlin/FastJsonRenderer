@@ -42,6 +42,7 @@ class ScreenController extends AbstractController
             'displayWidth' => $s->getDisplayWidth(),
             'displayHeight' => $s->getDisplayHeight(),
             'displayBpp' => $s->getDisplayBpp(),
+            'rotation' => $s->getRotation(),
             'itemCount' => count($s->getItems()),
             'createdAt' => $s->getCreatedAt()?->format(\DateTimeInterface::ATOM),
             'updatedAt' => $s->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
@@ -198,6 +199,9 @@ class ScreenController extends AbstractController
         if (isset($payload['displayBpp']) && is_int($payload['displayBpp'])) {
             $screen->setDisplayBpp($payload['displayBpp']);
         }
+        if (isset($payload['rotation']) && is_int($payload['rotation'])) {
+            $screen->setRotation($payload['rotation']);
+        }
         if (isset($payload['items']) && is_array($payload['items'])) {
             $screen->setItems($payload['items']);
         }
@@ -213,6 +217,7 @@ class ScreenController extends AbstractController
             'displayWidth' => $screen->getDisplayWidth(),
             'displayHeight' => $screen->getDisplayHeight(),
             'displayBpp' => $screen->getDisplayBpp(),
+            'rotation' => $screen->getRotation(),
             'items' => $screen->getItems(),
             'createdAt' => $screen->getCreatedAt()?->format(\DateTimeInterface::ATOM),
             'updatedAt' => $screen->getUpdatedAt()?->format(\DateTimeInterface::ATOM),
