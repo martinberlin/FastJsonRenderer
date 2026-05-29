@@ -195,7 +195,8 @@ class Screen
             return $item;
         }, $this->items);
 
-        // Map internal toggle (0=landscape, 1=portrait) to FastEPD setRotation degrees.
+        // Map internal toggle to FastEPD setRotation degrees:
+        // 0 = landscape (0°), 1 = portrait (90°), 2 = inverted landscape (180°), 3 = inverted portrait (270°).
         $rotationDegrees = match ($this->rotation) {
             1   => 90,
             2   => 180,

@@ -56,7 +56,8 @@ export default function Editor({ screenId, onBack, currentUser }) {
     // Unsaved items buffer (working copy of screen.items during editing)
     const [items, setItems] = useState([]);
 
-    // Rotation: 0 = landscape (default), 1 = portrait. Exported to firmware as 0°/90° degrees.
+    // Rotation: 0 = landscape (0°), 1 = portrait (90°), 2 = inverted landscape (180°), 3 = inverted portrait (270°).
+    // The UI toggle cycles between 0 and 1 only; all four values are supported by the firmware export.
     const [rotation, setRotation] = useState(0);
 
     // Line-draw mode state
