@@ -107,10 +107,18 @@ export async function bleSendJson(json, { deviceName, serviceUuid, charUuid, com
         const jsonBytes = new TextEncoder().encode(json);
         let payloadBytes;
         let headerType;
+        let actuallyCompressed = false;
         if (compress) {
-            onStatus('🗜️ Compressing…');
-            payloadBytes = await compressDeflate(jsonBytes);
-            headerType = HEADER_TYPE_ZLIB;
+            if (typeof CompressionStream === 'undefined') {
+                onStatus('⚠️ CompressionStream not supported in this browser – sending plain JSON instead.');
+                payloadBytes = jsonBytes;
+                headerType = HEADER_TYPE_JSON;
+            } else {
+                onStatus('🗜️ Compressing…');
+                payloadBytes = await compressDeflate(jsonBytes);
+                headerType = HEADER_TYPE_ZLIB;
+                actuallyCompressed = true;
+            }
         } else {
             payloadBytes = jsonBytes;
             headerType = HEADER_TYPE_JSON;
@@ -130,7 +138,7 @@ export async function bleSendJson(json, { deviceName, serviceUuid, charUuid, com
             sent += chunk.length;
             onProgress({ sent, total });
         }
-        if (compress) {
+        if (actuallyCompressed) {
             const ratio = ((1 - payloadLen / jsonBytes.length) * 100).toFixed(0);
             onStatus(`✅ Sent ${total} bytes (8-byte header + ${payloadLen} compressed, ${ratio}% smaller than ${jsonBytes.length} raw).`);
         } else {
