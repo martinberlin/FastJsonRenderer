@@ -9,7 +9,7 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Adds the rotation column to the screen table.
- * 0 = landscape (default), 1 = portrait (90° rotation via FastEPD setRotation).
+ * Internal values: 0 = landscape, 1 = portrait (exported as 0°/90° to FastEPD setRotation).
  */
 final class Version20260528000002 extends AbstractMigration
 {

@@ -195,9 +195,17 @@ class Screen
             return $item;
         }, $this->items);
 
+        // Map internal toggle (0=landscape, 1=portrait) to FastEPD setRotation degrees.
+        $rotationDegrees = match ($this->rotation) {
+            1   => 90,
+            2   => 180,
+            3   => 270,
+            default => 0,
+        };
+
         return [
             'display_bpp' => $this->displayBpp,
-            'rotation'    => $this->rotation,
+            'rotation'    => $rotationDegrees,
             'clear' => true,
             'items' => $exportItems,
         ];

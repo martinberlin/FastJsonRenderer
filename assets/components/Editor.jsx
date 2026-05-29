@@ -56,7 +56,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
     // Unsaved items buffer (working copy of screen.items during editing)
     const [items, setItems] = useState([]);
 
-    // Rotation: 0 = landscape (default), 1 = portrait (90° rotation / FastEPD setRotation)
+    // Rotation: 0 = landscape (default), 1 = portrait. Exported to firmware as 0°/90° degrees.
     const [rotation, setRotation] = useState(0);
 
     // Line-draw mode state
