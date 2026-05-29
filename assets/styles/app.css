@@ -635,6 +635,20 @@ body {
     min-width: 140px;
     white-space: nowrap;
 }
+.ble-label-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    min-width: unset;
+    user-select: none;
+}
+.ble-label-checkbox input[type="checkbox"] {
+    accent-color: var(--primary, #3b82f6);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
 .ble-input {
     flex: 1;
     background: #1e293b;

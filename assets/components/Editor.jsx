@@ -10,6 +10,7 @@ const SCALE_OPTIONS = [0.25, 0.33, 0.5, 0.67, 0.75, 1.0];
 const JSON_FOOTER_DEFAULT_H = 220;
 const JSON_FOOTER_MIN_H = 80;
 const JSON_FOOTER_MAX_H = 600;
+const LS_KEY_COMPRESS = 'ble_compress';
 
 /**
  * Apply a resize-handle drag to a rect-like item.
@@ -74,6 +75,16 @@ export default function Editor({ screenId, onBack, currentUser }) {
     const [bleQuickStatus, setBleQuickStatus] = useState(null);   // null | string
     const [bleQuickProgress, setBleQuickProgress] = useState(null); // null | { sent, total }
     const bleStatusTimerRef = useRef(null);
+    // Compress preference – checked by default, persisted in localStorage across all screens
+    const [compress, setCompress] = useState(() => {
+        const stored = localStorage.getItem(LS_KEY_COMPRESS);
+        return stored === null ? true : stored === 'true';
+    });
+    const handleCompressChange = (e) => {
+        const val = e.target.checked;
+        setCompress(val);
+        localStorage.setItem(LS_KEY_COMPRESS, String(val));
+    };
 
     // Ref used during footer drag-to-resize
     const footerDragRef = useRef(null);
@@ -349,7 +360,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
                 bleStatusTimerRef.current = setTimeout(() => setBleQuickStatus(null), 5000);
             }
         };
-        bleSendJson(bleJson, { ...BLE_DEFAULTS, onStatus, onProgress: setBleQuickProgress });
+        bleSendJson(bleJson, { ...BLE_DEFAULTS, compress, onStatus, onProgress: setBleQuickProgress });
     };
 
     return (
@@ -390,12 +401,21 @@ export default function Editor({ screenId, onBack, currentUser }) {
                         className="btn btn-secondary btn-sm"
                         onClick={handleBleQuickSend}
                         disabled={!!bleQuickProgress}
-                        title="Send JSON to ESP32 via BLE (uses default FastJsonDL UUIDs — open JSON panel to customise)"
+                        title="Send JSON to ESP32 via BLE (uses default FastJsonDL UUIDs)"
                     >
                         {bleQuickProgress
                             ? `📤 ${Math.round((bleQuickProgress.sent / bleQuickProgress.total) * 100)}%`
                             : '🔵 BLE Send'}
                     </button>
+                    <label className="ble-label ble-label-checkbox" title="Compress payload with raw DEFLATE before sending (header 0x0002, decompressed by miniz on firmware). Preference saved across all screens.">
+                        <input
+                            type="checkbox"
+                            checked={compress}
+                            onChange={handleCompressChange}
+                            aria-label="Compress BLE payload with raw DEFLATE (header 0x0002)"
+                        />
+                        Compressed
+                    </label>
                     {bleQuickStatus && (
                         <span className="editor-ble-status" title={bleQuickStatus}>
                             {bleQuickStatus}
