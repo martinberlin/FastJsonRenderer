@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 const DISPLAY_PRESETS = [
     { label: 'ED052TC4 – 1280×780 (16 grays)', type: 'ED052TC4', width: 1280, height: 780, bpp: 4 },
+    { label: 'ED060SCT – 600×800 6" (16 grays)', type: 'ED060SCT', width: 600, height: 800, bpp: 4 },
+    { label: 'ED060XH2 – 758×1024 6" (16 grays)', type: 'ED060XH2', width: 758, height: 1024, bpp: 4 },
+    { label: 'ED060KD1 – 1072×1448 6" (16 grays)', type: 'ED060KD1', width: 1072, height: 1448, bpp: 4 },
+    { label: 'ED133UT2 – 1600×1200 13.3" (16 grays)', type: 'ED133UT2', width: 1600, height: 1200, bpp: 4 },
+    { label: 'ED078KC1 – 1872×1404 7.8" (16 grays)', type: 'ED078KC1', width: 1872, height: 1404, bpp: 4 },
     { label: 'Generic 800×480 (4 grays)', type: 'GENERIC_800x480', width: 800, height: 480, bpp: 2 },
     { label: 'Generic 400×300 (B&W)', type: 'GENERIC_400x300', width: 400, height: 300, bpp: 1 },
 ];
@@ -18,6 +23,7 @@ export default function ScreenList({ onEdit, onNew, currentUser }) {
     const [showCreate, setShowCreate] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newPreset, setNewPreset] = useState(0);
+    const [newRotation, setNewRotation] = useState(0);
 
     const fetchScreens = async () => {
         setLoading(true);
@@ -46,6 +52,7 @@ export default function ScreenList({ onEdit, onNew, currentUser }) {
                 displayWidth: preset.width,
                 displayHeight: preset.height,
                 displayBpp: preset.bpp,
+                rotation: newRotation,
                 items: [],
             }),
         });
@@ -53,6 +60,7 @@ export default function ScreenList({ onEdit, onNew, currentUser }) {
             const screen = await res.json();
             setShowCreate(false);
             setNewTitle('');
+            setNewRotation(0);
             onEdit(screen.id);
         }
     };
@@ -121,6 +129,13 @@ export default function ScreenList({ onEdit, onNew, currentUser }) {
                                     ))}
                                 </select>
                             </div>
+                            <div className="form-group">
+                                <label>Orientation</label>
+                                <select value={newRotation} onChange={(e) => setNewRotation(Number(e.target.value))}>
+                                    <option value={0}>🖥 Landscape (default)</option>
+                                    <option value={1}>📱 Portrait (90° rotation)</option>
+                                </select>
+                            </div>
                             <div className="modal-actions">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreate(false)}>
                                     Cancel
@@ -159,6 +174,7 @@ export default function ScreenList({ onEdit, onNew, currentUser }) {
                             <div className="screen-card-title">{s.title}</div>
                             <div className="screen-card-meta">
                                 {s.displayType} · {s.displayWidth}×{s.displayHeight} · {s.displayBpp}BPP
+                                {s.rotation === 1 ? ' · 📱 Portrait' : ''}
                             </div>
                             <div className="screen-card-meta">
                                 {s.itemCount} element{s.itemCount !== 1 ? 's' : ''} ·{' '}

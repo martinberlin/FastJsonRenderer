@@ -32,7 +32,7 @@ export const BLE_DEFAULTS = {
  *
  * @param {string}   json              JSON string to send
  * @param {object}   opts
- * @param {string}   opts.deviceName   BLE device name filter (fallback for adv overflow)
+ * @param {string}   opts.deviceName   BLE device name prefix filter (used when provided; falls back to service UUID otherwise)
  * @param {string}   opts.serviceUuid  NUS service UUID
  * @param {string}   opts.charUuid     NUS RX characteristic UUID
  * @param {function} opts.onStatus     (message: string) => void
@@ -46,17 +46,22 @@ export async function bleSendJson(json, { deviceName, serviceUuid, charUuid, onS
     onStatus('🔍 Requesting BLE device…');
     onProgress(null);
     try {
-        // Build filters: service UUID filter (ideal) + name filter (fallback when
-        // the ESP32 primary advertisement overflows 31 bytes and the service UUID
-        // is silently dropped from it by the Bluedroid stack).
-        const filters = [{ services: [serviceUuid] }];
+        // Build filters: use namePrefix when a device name is provided (reliable
+        // even when the ESP32 advertisement overflows 31 bytes and drops the
+        // service UUID), otherwise fall back to the service UUID filter.
+        // Chrome requires exactly one approach – mixing both in separate filter
+        // objects causes the picker to show no devices when the UUID is absent
+        // from the advertisement.
+        const filters = [];
         if (deviceName?.trim()) {
-            filters.push({ name: deviceName.trim() });
+            filters.push({ namePrefix: deviceName.trim() });
+        } else {
+            filters.push({ services: [serviceUuid] });
         }
         const device = await navigator.bluetooth.requestDevice({
             filters,
             // optionalServices grants access to the service even when discovery
-            // happened via the name filter rather than the service UUID filter.
+            // happened via the namePrefix filter rather than the service UUID filter.
             optionalServices: [serviceUuid],
         });
         onStatus(`🔗 Connecting to "${device.name ?? 'device'}"…`);

@@ -56,6 +56,10 @@ export default function Editor({ screenId, onBack, currentUser }) {
     // Unsaved items buffer (working copy of screen.items during editing)
     const [items, setItems] = useState([]);
 
+    // Rotation: 0 = landscape (0°), 1 = portrait (90°), 2 = inverted landscape (180°), 3 = inverted portrait (270°).
+    // The UI toggle cycles between 0 and 1 only; all four values are supported by the firmware export.
+    const [rotation, setRotation] = useState(0);
+
     // Line-draw mode state
     const [drawMode, setDrawMode] = useState(null);       // null | 'drawLine' | 'drawPixel'
     const [lineFirstPoint, setLineFirstPoint] = useState(null); // null | { x, y }
@@ -109,11 +113,13 @@ export default function Editor({ screenId, onBack, currentUser }) {
                 displayWidth: 1280,
                 displayHeight: 780,
                 displayBpp: 4,
+                rotation: 0,
                 items: [],
             };
             setScreen(draft);
             setItems(draft.items);
             setTitle(draft.title);
+            setRotation(draft.rotation);
             return;
         }
 
@@ -123,6 +129,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
                 setScreen(s);
                 setItems(s.items);
                 setTitle(s.title);
+                setRotation(s.rotation ?? 0);
             })
             .catch((e) => setError(e.message))
             .finally(() => setLoading(false));
@@ -133,7 +140,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
         setSaving(true);
         setError(null);
         try {
-            const body = { ...screen, title, items };
+            const body = { ...screen, title, items, rotation };
             const url = screen?.id ? `/api/screens/${screen.id}` : '/api/screens';
             const method = screen?.id ? 'PUT' : 'POST';
             const res = await fetch(url, {
@@ -145,6 +152,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
             const saved = await res.json();
             setScreen(saved);
             setItems(saved.items);
+            setRotation(saved.rotation ?? 0);
         } catch (e) {
             setError(e.message);
         } finally {
@@ -322,12 +330,16 @@ export default function Editor({ screenId, onBack, currentUser }) {
 
     if (loading) return <div className="status-msg">Loading screen…</div>;
 
-    const displayWidth = screen?.displayWidth ?? 1280;
-    const displayHeight = screen?.displayHeight ?? 780;
+    // When portrait (rotation=1) the canvas coordinate space is the transposed
+    // display: width and height swap so items are designed in portrait dimensions.
+    const baseWidth  = screen?.displayWidth  ?? 1280;
+    const baseHeight = screen?.displayHeight ?? 780;
+    const displayWidth  = rotation === 1 ? baseHeight : baseWidth;
+    const displayHeight = rotation === 1 ? baseWidth  : baseHeight;
     const displayBpp = screen?.displayBpp ?? 4;
 
     // ── Quick BLE send ─────────────────────────────────────────────────────
-    const bleJson = JSON.stringify({ display_bpp: displayBpp, clear: true, items });
+    const bleJson = JSON.stringify({ display_bpp: displayBpp, rotation: rotation * 90, clear: true, items });
     const handleBleQuickSend = () => {
         // Auto-clear status after 5 s so the header doesn't stay cluttered
         clearTimeout(bleStatusTimerRef.current);
@@ -355,6 +367,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
                 />
                 <span className="editor-display-info">
                     {screen?.displayType} · {displayWidth}×{displayHeight} · {displayBpp}BPP
+                    {rotation === 1 ? ' · 📱 Portrait' : ''}
                 </span>
 
                 <div className="editor-header-actions">
@@ -366,6 +379,13 @@ export default function Editor({ screenId, onBack, currentUser }) {
                             ))}
                         </select>
                     </label>
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setRotation((r) => (r === 0 ? 1 : 0))}
+                        title={rotation === 0 ? 'Switch to portrait mode (90° rotation)' : 'Switch to landscape mode'}
+                    >
+                        {rotation === 0 ? '🖥 Landscape' : '📱 Portrait'}
+                    </button>
                     <button
                         className="btn btn-secondary btn-sm"
                         onClick={handleBleQuickSend}
@@ -464,7 +484,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
             {/* ── JSON footer bar ──────────────────────────────────── */}
             {showJson && (
                 <JsonFooter
-                    screen={{ ...screen, items }}
+                    screen={{ ...screen, items, rotation }}
                     height={jsonFooterHeight}
                     onDragHandleMouseDown={handleFooterDragStart}
                     onClose={() => setShowJson(false)}

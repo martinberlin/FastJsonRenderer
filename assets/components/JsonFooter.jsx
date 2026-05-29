@@ -24,6 +24,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
 
     const payload = {
         display_bpp: screen.displayBpp,
+        rotation: (screen.rotation ?? 0) * 90,
         clear: true,
         items: screen.items,
     };
@@ -154,9 +155,10 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
                         )}
                     </div>
                     <p className="ble-hint">
-                        Requires Chrome / Edge on HTTPS (or localhost / 127.0.0.1). Discovery uses both the
-                        service UUID filter and the device name filter — name matching is a reliable fallback when
-                        the ESP32 advertisement packet overflows 31 bytes and the service UUID is dropped from it.
+                        Requires Chrome / Edge on HTTPS (or localhost / 127.0.0.1). When a device name is
+                        provided, discovery uses a <code>namePrefix</code> filter so the picker lists devices
+                        even when the ESP32 advertisement packet overflows 31 bytes and the service UUID is
+                        dropped from it. Without a device name the service UUID filter is used instead.
                         Each transfer is preceded by an 8-byte header (type <code>0x0001</code> + uint48 length,
                         both little-endian) as required by the FastJsonDL firmware.
                     </p>

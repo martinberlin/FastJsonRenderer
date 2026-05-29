@@ -31,6 +31,9 @@ class Screen
     #[ORM\Column]
     private int $displayBpp = 4;
 
+    #[ORM\Column(options: ['default' => 0])]
+    private int $rotation = 0;
+
     /** @var array<int, array<string, mixed>> */
     #[ORM\Column(type: Types::JSON)]
     private array $items = [];
@@ -123,6 +126,18 @@ class Screen
         return $this;
     }
 
+    public function getRotation(): int
+    {
+        return $this->rotation;
+    }
+
+    public function setRotation(int $rotation): static
+    {
+        $this->rotation = $rotation;
+
+        return $this;
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -180,8 +195,18 @@ class Screen
             return $item;
         }, $this->items);
 
+        // Map internal toggle to FastEPD setRotation degrees:
+        // 0 = landscape (0°), 1 = portrait (90°), 2 = inverted landscape (180°), 3 = inverted portrait (270°).
+        $rotationDegrees = match ($this->rotation) {
+            1   => 90,
+            2   => 180,
+            3   => 270,
+            default => 0,
+        };
+
         return [
             'display_bpp' => $this->displayBpp,
+            'rotation'    => $rotationDegrees,
             'clear' => true,
             'items' => $exportItems,
         ];
