@@ -339,7 +339,7 @@ export default function Editor({ screenId, onBack, currentUser }) {
     const displayBpp = screen?.displayBpp ?? 4;
 
     // ── Quick BLE send ─────────────────────────────────────────────────────
-    const bleJson = JSON.stringify({ display_bpp: displayBpp, rotation, clear: true, items });
+    const bleJson = JSON.stringify({ display_bpp: displayBpp, rotation: rotation * 90, clear: true, items });
     const handleBleQuickSend = () => {
         // Auto-clear status after 5 s so the header doesn't stay cluttered
         clearTimeout(bleStatusTimerRef.current);

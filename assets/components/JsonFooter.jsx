@@ -24,7 +24,7 @@ export default function JsonFooter({ screen, height, onDragHandleMouseDown, onCl
 
     const payload = {
         display_bpp: screen.displayBpp,
-        rotation: screen.rotation ?? 0,
+        rotation: (screen.rotation ?? 0) * 90,
         clear: true,
         items: screen.items,
     };
