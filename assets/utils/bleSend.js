@@ -3,7 +3,8 @@
 // Used by both the quick-send button in the Editor header and the full BLE
 // configuration panel in JsonFooter.
 
-const BLE_CHUNK_SIZE = 512;
+const BLE_CHUNK_SIZE = 244;
+const BLE_NO_RESPONSE_PACING_MS = 10;
 
 // Transfer protocol – 8-byte header prepended to every JSON payload.
 //   Byte 0-1 : type   uint16 little-endian  0x0001 = JSON payload
@@ -18,6 +19,10 @@ function buildHeader(jsonByteLength) {
     dv.setUint32(2, jsonByteLength >>> 0, true);
     dv.setUint16(6, Math.floor(jsonByteLength / 0x100000000), true);
     return header;
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /** Default NUS (Nordic UART Service) UUIDs and device name used by FastJsonDL firmware. */
@@ -81,9 +86,15 @@ export async function bleSendJson(json, { deviceName, serviceUuid, charUuid, onS
         const total = data.length;
         let sent = 0;
         onStatus('📤 Sending…');
+        const canWriteWithResponse = characteristic.properties?.write;
         while (sent < total) {
             const chunk = data.slice(sent, sent + BLE_CHUNK_SIZE);
-            await characteristic.writeValueWithoutResponse(chunk);
+            if (canWriteWithResponse) {
+                await characteristic.writeValueWithResponse(chunk);
+            } else {
+                await characteristic.writeValueWithoutResponse(chunk);
+                await delay(BLE_NO_RESPONSE_PACING_MS);
+            }
             sent += chunk.length;
             onProgress({ sent, total });
         }
