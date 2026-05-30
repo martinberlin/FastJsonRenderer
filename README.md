@@ -77,7 +77,7 @@ ddev npm run watch
 - **Layer ordering** – move elements up/down in rendering order
 - **Live JSON footer** – click `{ } JSON` in the header to open a dark-themed footer panel spanning the full editor width; see the exact FastJsonDL payload update live as you design; drag the top edge to resize it; copy to clipboard in one click
 - **JSON byte counter** – live KB size badge in the JSON footer; turns amber with a ⚠ warning when the payload exceeds 50 KB (BLE threshold)
-- **BLE send** – one-click "🔵 BLE" button in the JSON footer; connects via Web Bluetooth (Chrome / Edge, HTTPS) and streams the JSON to your ESP32 in 512-byte chunks using the Nordic UART Service (configurable UUIDs)
+- **BLE send** – one-click "🔵 BLE" button in the JSON footer; connects via Web Bluetooth (Chrome / Edge, HTTPS) and streams the JSON to your ESP32 in 244-byte chunks using write-with-response (fallback: paced write-without-response) over the Nordic UART Service (configurable UUIDs)
 - **Export JSON** – download a `.json` file ready to POST to your ESP32
 - **Persistence** – screens saved to MariaDB via Doctrine ORM (Symfony 7)
 
